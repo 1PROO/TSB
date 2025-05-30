@@ -46,6 +46,7 @@
             --received-bubble-bg: #ffffff;
             --received-bubble-text: #111b21;
             --chat-input-bg: #ffffff;
+            /* --header-height: 78px; /* Approximate header height for light mode - Can be removed if JS calculates dynamically or uses fixed */
         }
 
         .dark-mode {
@@ -67,6 +68,7 @@
             --received-bubble-bg: #202c33;
             --received-bubble-text: #e9edef;
             --chat-input-bg: #202c33;
+            /* --header-height: 78px; /* Approximate header height for dark mode - Can be removed */
         }
 
         body {
@@ -328,27 +330,43 @@
              max-height: calc(100vh - 200px);
              height: 65vh;
         }
+
+        #appHeader {
+            position: sticky;
+            top: 0;
+            z-index: 35;
+            background-color: var(--bg-primary);
+        }
+        #botListDropdown {
+            position: relative;
+            z-index: 36;
+        }
+
+
         @media (max-width: 767px) {
-            /* Default mobile: sender column takes full width, incoming is handled by JS */
             #senderAndLogsColumn {
-                width: 100% !important; /* Ensure full width initially on mobile */
+                width: 100% !important;
             }
-             /* Initially hide incoming messages section on mobile unless toggled */
-             #incomingMessagesSectionContainer:not(.mobile-chat-view-active) {
-                display: none;
-            }
-            #mainContentFlexContainer.mobile-chat-view #senderAndLogsColumn {
-                display: none;
-            }
-            #mainContentFlexContainer.mobile-chat-view #incomingMessagesSectionContainer {
-                display: flex !important; /* Ensure it's flex when active */
-                width: 100%;
-                max-width: 100%;
-            }
-             #incomingMessagesSection .chat-area-container {
+            #incomingMessagesSectionContainer.mobile-fullscreen-chat {
+                display: flex !important;
                 flex-direction: column;
-                max-height: calc(100vh - 120px);
-                height: calc(100vh - 120px);
+                width: 100vw !important;
+                max-width: 100vw !important;
+                position: fixed !important;
+                left: 0;
+                right: 0;
+                /* top and height are set by JavaScript in applyMobileViewState */
+                z-index: 30;
+                background-color: var(--bg-secondary);
+            }
+            #mainContentFlexContainer.mobile-chat-active-state #senderAndLogsColumn {
+                display: none;
+            }
+
+             #incomingMessagesSection.mobile-fullscreen-chat .chat-area-container {
+                flex-direction: column;
+                max-height: 100%;
+                height: 100%;
             }
             #conversationListContainer {
                 height: 30vh;
@@ -361,9 +379,6 @@
             #messageDisplayArea {
                 width: 100%;
                 flex-grow: 1;
-            }
-            #mainContentFlexContainer.mobile-chat-view + #appFooter {
-                display: none;
             }
         }
 
@@ -433,6 +448,10 @@
                  <p id="autoRefreshStatus" class="mt-2 text-xs text-theme-secondary"></p>
             </div>
 
+            <div class="mb-6">
+                <p class="text-sm text-theme-secondary"><span data-translate-key="developedBy">تم التطوير بواسطة:</span> AhmedAkram</p>
+            </div>
+
              <div class="mt-8 text-left rtl:text-right">
                 <button onclick="toggleSettingsModal(false)" class="px-4 py-2 rounded-md accent-theme accent-theme-hover" data-translate-key="closeButton">إغلاق</button>
             </div>
@@ -440,7 +459,7 @@
     </div>
 
     <div id="appContainer" class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-full md:max-w-6xl">
-        <header class="flex justify-between items-center mb-6 pb-4 border-b border-theme">
+        <header id="appHeader" class="flex justify-between items-center mb-6 pb-4 border-b border-theme">
             <div class="flex items-center space-x-3 rtl:space-x-reverse cursor-pointer" onclick="toggleBotListDropdown()">
                 <i id="botListArrow" class="fas fa-chevron-down text-theme-secondary"></i>
                 <h1 id="currentBotNameDisplay" class="text-2xl sm:text-3xl font-bold text-theme-primary" data-translate-key="defaultBotNameDisplay">بوت تليجرام</h1>
@@ -602,9 +621,11 @@
             </div>
         </div>
 
+        <!--
         <footer id="appFooter" class="text-center mt-12 py-4 border-t border-theme">
             <p class="text-sm text-theme-secondary">&copy; <span id="currentYear"></span> <span data-translate-key="footerText">مرسل بوت تليجرام المطور.</span></p>
         </footer>
+        -->
     </div>
 
     <script>
@@ -642,6 +663,7 @@
 
         // DOM Elements
         const appContainer = document.getElementById('appContainer');
+        const mainHeader = document.getElementById('appHeader');
         const mainContentFlexContainer = document.getElementById('mainContentFlexContainer');
         const senderAndLogsColumn = document.getElementById('senderAndLogsColumn');
         const mobileChatViewToggleBtn = document.getElementById('mobileChatViewToggleBtn');
@@ -702,9 +724,9 @@
         const sendChatInputBtn = document.getElementById('sendChatInputBtn');
         const chatInputFile = document.getElementById('chatInputFile');
         const chatInputSelectedFiles = document.getElementById('chatInputSelectedFiles');
-        const appFooter = document.getElementById('appFooter');
+        // const appFooter = document.getElementById('appFooter'); // Footer is removed
 
-        document.getElementById('currentYear').textContent = new Date().getFullYear();
+        // document.getElementById('currentYear').textContent = new Date().getFullYear(); // Part of removed footer
 
         botTokenInput.addEventListener('input', () => {
             fetchChatIdsBtn.disabled = !botTokenInput.value.trim();
@@ -743,25 +765,27 @@
             try {
                 if (lang === 'en') {
                     translations = {
-                        settingsTitle: "Settings", themeLabel: "Theme", lightTheme: "Light", darkTheme: "Dark", languageLabel: "Language", closeButton: "Close", defaultBotNameDisplay: "Telegram Bot", noBotsMessage: "No bots configured yet. Add one!", addBotFormTitle: "Add Bot", editBotFormTitle: "Edit Bot", botNameLabel: "Bot Name", botNamePlaceholder: "E.g., My Awesome Bot", botTokenLabel: "Bot Token", chatIdsLabel: "Chat IDs", addChatIdButton: "Add Chat ID", chatIdPlaceholder: "Chat ID (number)", aliasPlaceholder: "Alias (optional)", saveBotButton: "Save Bot", cancelButton: "Cancel", sendToLabel: "Send to", sendMessageLabel: "Send Message", messagePlaceholder: "Type your message here...", attachFilesLabel: "Attach Files (Optional)", sendButton: "Send", activityLogLabel: "Activity Log", noLogsYetMessage: "No activity yet.", footerText: "Advanced Telegram Bot Sender by AhmedAkram.", settingsButtonTitle: "Settings", editBotButtonTitle: "Edit Selected Bot", addBotButtonTitle: "Add New Bot", deleteBotTitle: "Delete Bot", removeChatIdTitle: "Remove Chat ID", botSelectedNotification: "Bot \"{botName}\" selected.", themeChangeNotification: "Theme set to {themeName}.", languageChangeNotification: "Language set to {langName}.", saveBotSuccessNotification: "Bot \"{botName}\" saved successfully.", addBotSuccessNotification: "Bot \"{botName}\" added successfully.", deleteBotSuccessNotification: "Bot \"{botName}\" deleted successfully.", genericErrorNotification: "An error occurred.", allFieldsRequiredNotification: "Name, Token, and at least one Chat ID are required.", invalidBotTokenNotification: "Invalid Bot Token format.", invalidChatIdNotification: "Invalid Chat ID: \"{chatId}\". Must be a number.", atLeastOneChatIdNotification: "At least one Chat ID is required.", confirmDeleteBotPrompt: "To confirm, type the name of the bot \"{botName}\" you want to delete:", deleteNotConfirmedNotification: "Deletion not confirmed.", noBotSelectedError: "No bot selected. Please select a bot first.", botNotFoundForSendingError: "Selected bot not found. Please try again.", noChatIdForBotError: "No Chat ID configured for the selected bot.", noMessageOrFileError: "Please enter a message or select a file to send.", sendingMessageStatus: "Sending...", sentSuccessfullyStatus: "Sent successfully to {count} recipient(s)!", sentWithFailuresStatus: "Sent to {successCount}, but {errorCount} failed. Check logs.", sendFailedStatus: "Failed to send to {errorCount} recipient(s). Check logs.", fileSentLog: "File \"{fileName}\" sent to {recipient} via {botName}.", messageSentLog: "Message sent to {recipient} via {botName}.", sendFailedLog: "Failed to send to {recipient} via {botName}. Error: {errorMessage}", incomingMessagesTitle: "Incoming Messages", refreshMessagesButtonTitle: "Refresh Messages", noConversationsMessage: "No conversations to display.", selectConversationMessage: "Select a conversation to view messages.", fetchingUpdatesMessage: "Fetching updates...", updatesFetchedMessage: "Updates fetched successfully.", noNewUpdatesMessage: "No new updates.", errorFetchingUpdates: "Error fetching updates: {error}", Photo: "Photo", Document: "Document", Sticker: "Sticker", VoiceMessage: "Voice Message", AudioFile: "Audio File", Video: "Video", VideoNote: "Video Note", UnsupportedMessage: "Unsupported Message Type", noMessagesInConversation: "No messages in this conversation.",
+                        settingsTitle: "Settings", themeLabel: "Theme", lightTheme: "Light", darkTheme: "Dark", languageLabel: "Language", closeButton: "Close", defaultBotNameDisplay: "Telegram Bot", noBotsMessage: "No bots configured yet. Add one!", addBotFormTitle: "Add Bot", editBotFormTitle: "Edit Bot", botNameLabel: "Bot Name", botNamePlaceholder: "E.g., My Awesome Bot", botTokenLabel: "Bot Token", chatIdsLabel: "Chat IDs", addChatIdButton: "Add Chat ID", chatIdPlaceholder: "Chat ID (number)", aliasPlaceholder: "Alias (optional)", saveBotButton: "Save Bot", cancelButton: "Cancel", sendToLabel: "Send to", sendMessageLabel: "Send Message", messagePlaceholder: "Type your message here...", attachFilesLabel: "Attach Files (Optional)", sendButton: "Send", activityLogLabel: "Activity Log", noLogsYetMessage: "No activity yet.", /* footerText: "Advanced Telegram Bot Sender.", */ settingsButtonTitle: "Settings", editBotButtonTitle: "Edit Selected Bot", addBotButtonTitle: "Add New Bot", deleteBotTitle: "Delete Bot", removeChatIdTitle: "Remove Chat ID", botSelectedNotification: "Bot \"{botName}\" selected.", themeChangeNotification: "Theme set to {themeName}.", languageChangeNotification: "Language set to {langName}.", saveBotSuccessNotification: "Bot \"{botName}\" saved successfully.", addBotSuccessNotification: "Bot \"{botName}\" added successfully.", deleteBotSuccessNotification: "Bot \"{botName}\" deleted successfully.", genericErrorNotification: "An error occurred.", allFieldsRequiredNotification: "Name, Token, and at least one Chat ID are required.", invalidBotTokenNotification: "Invalid Bot Token format.", invalidChatIdNotification: "Invalid Chat ID: \"{chatId}\". Must be a number.", atLeastOneChatIdNotification: "At least one Chat ID is required.", confirmDeleteBotPrompt: "To confirm, type the name of the bot \"{botName}\" you want to delete:", deleteNotConfirmedNotification: "Deletion not confirmed.", noBotSelectedError: "No bot selected. Please select a bot first.", botNotFoundForSendingError: "Selected bot not found. Please try again.", noChatIdForBotError: "No Chat ID configured for the selected bot.", noMessageOrFileError: "Please enter a message or select a file to send.", sendingMessageStatus: "Sending...", sentSuccessfullyStatus: "Sent successfully to {count} recipient(s)!", sentWithFailuresStatus: "Sent to {successCount}, but {errorCount} failed. Check logs.", sendFailedStatus: "Failed to send to {errorCount} recipient(s). Check logs.", fileSentLog: "File \"{fileName}\" sent to {recipient} via {botName}.", messageSentLog: "Message sent to {recipient} via {botName}.", sendFailedLog: "Failed to send to {recipient} via {botName}. Error: {errorMessage}", incomingMessagesTitle: "Incoming Messages", refreshMessagesButtonTitle: "Refresh Messages", noConversationsMessage: "No conversations to display.", selectConversationMessage: "Select a conversation to view messages.", fetchingUpdatesMessage: "Fetching updates...", updatesFetchedMessage: "Updates fetched successfully.", noNewUpdatesMessage: "No new updates.", errorFetchingUpdates: "Error fetching updates: {error}", Photo: "Photo", Document: "Document", Sticker: "Sticker", VoiceMessage: "Voice Message", AudioFile: "Audio File", Video: "Video", VideoNote: "Video Note", UnsupportedMessage: "Unsupported Message Type", noMessagesInConversation: "No messages in this conversation.",
                         autoRefreshLabel: "Auto-refresh messages", autoRefreshEnabledStatus: "Enabled (every {seconds}s)", autoRefreshDisabledStatus: "Disabled", addSenderToBotTitle: "Add sender to bot", addSenderToBot: "Add to Bot", senderAddedToBotNotification: "Sender {senderName} ({senderId}) added to bot {botName}.", senderAlreadyExistsNotification: "Sender {senderName} ({senderId}) already exists in bot {botName}.", cannotAddGroupToBotNotification: "Cannot add group/channel chats directly to bot recipients this way.",
                         fetchChatIdsButton: "Fetch Chat IDs", fetchingChatIds: "Fetching Chat IDs...", noChatsFound: "No recent chats found for this bot token. Send a message to the bot first.", chatIdsFetched: "{count} Chat ID(s) fetched and populated.", tokenRequiredToFetch: "Bot token is required to fetch Chat IDs.",
                         showIncomingMessagesLabel: "Show Incoming Messages Section", defaultAliasPrefix: "Default User",
                         deleteSingleMessageConfirm: "Are you sure you want to delete this message locally?", messageDeletedNotification: "Message deleted locally.", clearConversationTitle: "Clear Conversation", clearConversationConfirm: "Are you sure you want to clear all messages in this conversation locally?", conversationClearedNotification: "Conversation cleared locally.", secondsUnit: "seconds",
                         chatInputPlaceholder: "Type a message...", filesSelected: "{count} file(s) selected",
                         searchChatIdPlaceholder: "Search by name or ID...", selectAllButton: "Select All", deselectAllButton: "Deselect All", invertSelectionButton: "Invert Selection",
-                        toggleChatViewSender: "Show Sender View", toggleChatViewMessages: "Show Messages View", chatIdRemovedNotification: "Chat ID {chatId} removed from bot."
+                        toggleChatViewSender: "Show Sender View", toggleChatViewMessages: "Show Messages View", chatIdRemovedNotification: "Chat ID {chatId} removed from bot.",
+                        developedBy: "Developed by:"
                     };
                 } else {
                     translations = {
-                        settingsTitle: "الإعدادات", themeLabel: "السمة", lightTheme: "فاتح", darkTheme: "داكن", languageLabel: "اللغة", closeButton: "إغلاق", defaultBotNameDisplay: "بوت تليجرام", noBotsMessage: "لا توجد بوتات مهيأة بعد. قم بإضافة واحد!", addBotFormTitle: "إضافة بوت", editBotFormTitle: "تعديل البوت", botNameLabel: "اسم البوت", botNamePlaceholder: "مثال: بوتي الرائع", botTokenLabel: "توكن البوت (Token)", chatIdsLabel: "معرفات الدردشة", addChatIdButton: "إضافة معرف دردشة", chatIdPlaceholder: "معرف الدردشة (رقم)", aliasPlaceholder: "الاسم المستعار (اختياري)", saveBotButton: "حفظ البوت", cancelButton: "إلغاء", sendToLabel: "إرسال إلى", sendMessageLabel: "إرسال رسالة", messagePlaceholder: "اكتب رسالتك هنا...", attachFilesLabel: "إرفاق ملفات (اختياري)", sendButton: "إرسال", activityLogLabel: "سجل النشاط", noLogsYetMessage: "لا يوجد نشاط بعد.", footerText: "بوت تيليجرام المتقدم المرسل بواسطة أحمد أكرم.", settingsButtonTitle: "الإعدادات", editBotButtonTitle: "تعديل البوت المحدد", addBotButtonTitle: "إضافة بوت جديد", deleteBotTitle: "حذف البوت", removeChatIdTitle: "إزالة معرف الدردشة", botSelectedNotification: "تم اختيار البوت \"{botName}\".", themeChangeNotification: "تم تغيير السمة إلى {themeName}.", languageChangeNotification: "تم تغيير اللغة إلى {langName}.", saveBotSuccessNotification: "تم حفظ البوت \"{botName}\" بنجاح.", addBotSuccessNotification: "تمت إضافة البوت \"{botName}\" بنجاح.", deleteBotSuccessNotification: "تم حذف البوت \"{botName}\" بنجاح.", genericErrorNotification: "حدث خطأ ما.", allFieldsRequiredNotification: "الاسم والتوكن ومعرف دردشة واحد على الأقل مطلوبة.", invalidBotTokenNotification: "صيغة توكن البوت غير صالحة.", invalidChatIdNotification: "معرف الدردشة \"{chatId}\" غير صالح. يجب أن يكون رقمًا.", atLeastOneChatIdNotification: "يجب إضافة معرف دردشة واحد على الأقل.", confirmDeleteBotPrompt: "للتأكيد، اكتب اسم البوت \"{botName}\" الذي تريد حذفه:", deleteNotConfirmedNotification: "لم يتم تأكيد الحذف.", noBotSelectedError: "لم يتم اختيار أي بوت. يرجى اختيار بوت أولاً.", botNotFoundForSendingError: "البوت المختار غير موجود. يرجى المحاولة مرة أخرى.", noChatIdForBotError: "لا يوجد معرف دردشة مهيأ للبوت المختار.", noMessageOrFileError: "يرجى إدخال رسالة أو اختيار ملف للإرسال.", sendingMessageStatus: "جاري الإرسال...", sentSuccessfullyStatus: "تم الإرسال بنجاح إلى {count} مستلم(ين)!", sentWithFailuresStatus: "أُرسلت إلى {successCount}، وفشلت لـ {errorCount}. تحقق من السجل.", sendFailedStatus: "فشل الإرسال لـ {errorCount} مستلم(ين). تحقق من السجل.", fileSentLog: "تم إرسال الملف \"{fileName}\" إلى {recipient} عبر {botName}.", messageSentLog: "تم إرسال الرسالة إلى {recipient} عبر {botName}.", sendFailedLog: "فشل الإرسال إلى {recipient} عبر {botName}. الخطأ: {errorMessage}", incomingMessagesTitle: "الرسائل الواردة", refreshMessagesButtonTitle: "تحديث الرسائل", noConversationsMessage: "لا توجد محادثات لعرضها.", selectConversationMessage: "اختر محادثة لعرض الرسائل.", fetchingUpdatesMessage: "جاري جلب التحديثات...", updatesFetchedMessage: "تم جلب التحديثات بنجاح.", noNewUpdatesMessage: "لا توجد تحديثات جديدة.", errorFetchingUpdates: "خطأ في جلب التحديثات: {error}", Photo: "صورة", Document: "مستند", Sticker: "ملصق", VoiceMessage: "رسالة صوتية", AudioFile: "ملف صوتي", Video: "فيديو", VideoNote: "ملاحظة فيديو", UnsupportedMessage: "نوع رسالة غير مدعوم", noMessagesInConversation: "لا توجد رسائل في هذه المحادثة.",
+                        settingsTitle: "الإعدادات", themeLabel: "السمة", lightTheme: "فاتح", darkTheme: "داكن", languageLabel: "اللغة", closeButton: "إغلاق", defaultBotNameDisplay: "بوت تليجرام", noBotsMessage: "لا توجد بوتات مهيأة بعد. قم بإضافة واحد!", addBotFormTitle: "إضافة بوت", editBotFormTitle: "تعديل البوت", botNameLabel: "اسم البوت", botNamePlaceholder: "مثال: بوتي الرائع", botTokenLabel: "توكن البوت (Token)", chatIdsLabel: "معرفات الدردشة", addChatIdButton: "إضافة معرف دردشة", chatIdPlaceholder: "معرف الدردشة (رقم)", aliasPlaceholder: "الاسم المستعار (اختياري)", saveBotButton: "حفظ البوت", cancelButton: "إلغاء", sendToLabel: "إرسال إلى", sendMessageLabel: "إرسال رسالة", messagePlaceholder: "اكتب رسالتك هنا...", attachFilesLabel: "إرفاق ملفات (اختياري)", sendButton: "إرسال", activityLogLabel: "سجل النشاط", noLogsYetMessage: "لا يوجد نشاط بعد.", /* footerText: "مرسل بوت تليجرام المطور.", */ settingsButtonTitle: "الإعدادات", editBotButtonTitle: "تعديل البوت المحدد", addBotButtonTitle: "إضافة بوت جديد", deleteBotTitle: "حذف البوت", removeChatIdTitle: "إزالة معرف الدردشة", botSelectedNotification: "تم اختيار البوت \"{botName}\".", themeChangeNotification: "تم تغيير السمة إلى {themeName}.", languageChangeNotification: "تم تغيير اللغة إلى {langName}.", saveBotSuccessNotification: "تم حفظ البوت \"{botName}\" بنجاح.", addBotSuccessNotification: "تمت إضافة البوت \"{botName}\" بنجاح.", deleteBotSuccessNotification: "تم حذف البوت \"{botName}\" بنجاح.", genericErrorNotification: "حدث خطأ ما.", allFieldsRequiredNotification: "الاسم والتوكن ومعرف دردشة واحد على الأقل مطلوبة.", invalidBotTokenNotification: "صيغة توكن البوت غير صالحة.", invalidChatIdNotification: "معرف الدردشة \"{chatId}\" غير صالح. يجب أن يكون رقمًا.", atLeastOneChatIdNotification: "يجب إضافة معرف دردشة واحد على الأقل.", confirmDeleteBotPrompt: "للتأكيد، اكتب اسم البوت \"{botName}\" الذي تريد حذفه:", deleteNotConfirmedNotification: "لم يتم تأكيد الحذف.", noBotSelectedError: "لم يتم اختيار أي بوت. يرجى اختيار بوت أولاً.", botNotFoundForSendingError: "البوت المختار غير موجود. يرجى المحاولة مرة أخرى.", noChatIdForBotError: "لا يوجد معرف دردشة مهيأ للبوت المختار.", noMessageOrFileError: "يرجى إدخال رسالة أو اختيار ملف للإرسال.", sendingMessageStatus: "جاري الإرسال...", sentSuccessfullyStatus: "تم الإرسال بنجاح إلى {count} مستلم(ين)!", sentWithFailuresStatus: "أُرسلت إلى {successCount}، وفشلت لـ {errorCount}. تحقق من السجل.", sendFailedStatus: "فشل الإرسال لـ {errorCount} مستلم(ين). تحقق من السجل.", fileSentLog: "تم إرسال الملف \"{fileName}\" إلى {recipient} عبر {botName}.", messageSentLog: "تم إرسال الرسالة إلى {recipient} عبر {botName}.", sendFailedLog: "فشل الإرسال إلى {recipient} عبر {botName}. الخطأ: {errorMessage}", incomingMessagesTitle: "الرسائل الواردة", refreshMessagesButtonTitle: "تحديث الرسائل", noConversationsMessage: "لا توجد محادثات لعرضها.", selectConversationMessage: "اختر محادثة لعرض الرسائل.", fetchingUpdatesMessage: "جاري جلب التحديثات...", updatesFetchedMessage: "تم جلب التحديثات بنجاح.", noNewUpdatesMessage: "لا توجد تحديثات جديدة.", errorFetchingUpdates: "خطأ في جلب التحديثات: {error}", Photo: "صورة", Document: "مستند", Sticker: "ملصق", VoiceMessage: "رسالة صوتية", AudioFile: "ملف صوتي", Video: "فيديو", VideoNote: "ملاحظة فيديو", UnsupportedMessage: "نوع رسالة غير مدعوم", noMessagesInConversation: "لا توجد رسائل في هذه المحادثة.",
                         autoRefreshLabel: "التحديث التلقائي للرسائل", autoRefreshEnabledStatus: "مفعل (كل {seconds} ثانية)", autoRefreshDisabledStatus: "معطل", addSenderToBotTitle: "إضافة المرسل للبوت", addSenderToBot: "إضافة للبوت", senderAddedToBotNotification: "تمت إضافة المرسل {senderName} ({senderId}) إلى البوت {botName}.", senderAlreadyExistsNotification: "المرسل {senderName} ({senderId}) موجود بالفعل في البوت {botName}.", cannotAddGroupToBotNotification: "لا يمكن إضافة محادثات المجموعات/القنوات مباشرة إلى مستلمي البوت بهذه الطريقة.",
                         fetchChatIdsButton: "جلب المعرفات", fetchingChatIds: "جاري جلب المعرفات...", noChatsFound: "لم يتم العثور على محادثات حديثة لتوكن البوت هذا. أرسل رسالة إلى البوت أولاً.", chatIdsFetched: "تم جلب وتعبئة {count} معرف(ات) دردشة.", tokenRequiredToFetch: "توكن البوت مطلوب لجلب معرفات الدردشة.",
                         showIncomingMessagesLabel: "إظهار قسم الرسائل الواردة", defaultAliasPrefix: "مستخدم افتراضي",
                         deleteSingleMessageConfirm: "هل أنت متأكد من أنك تريد حذف هذه الرسالة محليًا؟", messageDeletedNotification: "تم حذف الرسالة محليًا.", clearConversationTitle: "مسح المحادثة", clearConversationConfirm: "هل أنت متأكد من أنك تريد مسح جميع الرسائل في هذه المحادثة محليًا؟", conversationClearedNotification: "تم مسح المحادثة محليًا.", secondsUnit: "ثانية",
                         chatInputPlaceholder: "اكتب رسالة...", filesSelected: "{count} ملف(ات) محددة",
                         searchChatIdPlaceholder: "بحث بالاسم أو المعرف...", selectAllButton: "تحديد الكل", deselectAllButton: "إلغاء تحديد الكل", invertSelectionButton: "عكس التحديد",
-                        toggleChatViewSender: "عرض المرسل", toggleChatViewMessages: "عرض الرسائل", chatIdRemovedNotification: "تمت إزالة معرف الدردشة {chatId} من البوت."
+                        toggleChatViewSender: "عرض المرسل", toggleChatViewMessages: "عرض الرسائل", chatIdRemovedNotification: "تمت إزالة معرف الدردشة {chatId} من البوت.",
+                        developedBy: "تم التطوير بواسطة:"
                     };
                 }
                 applyTranslations();
@@ -817,7 +841,7 @@
             } else {
                 const currentBot = bots.find(b => b.id === selectedBotId);
                 if (currentBot) {
-                    currentBotNameDisplay.innerHTML = `<i class="fas fa-robot text-3xl accent-theme-text ltr:ml-2 rtl:ml-2"></i> ${currentBot.name}`;
+                    currentBotNameDisplay.innerHTML = `<i class="fas fa-robot text-3xl accent-theme-text ltr:ml-2 rtl:mr-2"></i> ${currentBot.name}`;
                 }
             }
             sendButtonIcon.classList.toggle('hidden', currentLanguage === 'ar');
@@ -984,73 +1008,79 @@
         }
 
         // Helper function to apply view state changes on mobile
-        function applyMobileViewState(showChatActive) { // showChatActive corresponds to isMobileChatViewActive
-            if (window.innerWidth >= 768 || !showIncomingMessages) return; // Only for mobile and if feature is enabled
-
-            isMobileChatViewActive = showChatActive;
-
-            senderAndLogsColumn.classList.toggle('hidden', showChatActive);
-            // Ensure senderAndLogsColumn is w-full when visible on mobile
-            senderAndLogsColumn.classList.toggle('w-full', !showChatActive);
-
-            incomingMessagesSectionContainer.classList.toggle('hidden', !showChatActive);
-             // Ensure incomingMessagesSectionContainer is w-full when visible on mobile
-            incomingMessagesSectionContainer.classList.toggle('w-full', showChatActive);
-
-
-            mainContentFlexContainer.classList.add('flex-col'); // Keep it flex-col for mobile
-            mainContentFlexContainer.classList.toggle('mobile-chat-view', showChatActive);
-
-            if (appFooter) {
-                appFooter.classList.toggle('hidden', showChatActive);
+        function applyMobileViewState(showChatFullScreen) {
+            if (window.innerWidth >= 768 || !showIncomingMessages) {
+                mainContentFlexContainer.classList.remove('mobile-chat-active-state');
+                incomingMessagesSectionContainer.classList.remove('mobile-fullscreen-chat');
+                if (window.innerWidth >= 768 && showIncomingMessages) {
+                    senderAndLogsColumn.classList.remove('hidden');
+                    incomingMessagesSectionContainer.classList.remove('hidden');
+                }
+                return;
             }
-            updateMobileChatToggleButton(showChatActive);
+
+            isMobileChatViewActive = showChatFullScreen;
+
+            senderAndLogsColumn.classList.toggle('hidden', showChatFullScreen);
+            senderAndLogsColumn.classList.toggle('w-full', !showChatFullScreen);
+
+            incomingMessagesSectionContainer.classList.toggle('hidden', !showChatFullScreen);
+            incomingMessagesSectionContainer.classList.toggle('mobile-fullscreen-chat', showChatFullScreen);
+
+            mainContentFlexContainer.classList.toggle('mobile-chat-active-state', showChatFullScreen);
+            mainContentFlexContainer.classList.add('flex-col');
+
+            // USER REQUEST: Adjust top/height of fullscreen chat based on fixed offset
+            if (showChatFullScreen && mainHeader) {
+                const fixedTopOffset = 103; // px - As per user request
+                incomingMessagesSectionContainer.style.top = fixedTopOffset + 'px';
+                incomingMessagesSectionContainer.style.height = `calc(100vh - ${fixedTopOffset}px)`;
+            }
+
+            updateMobileChatToggleButton(showChatFullScreen);
         }
 
 
         window.toggleIncomingMessagesSectionVisibility = (show) => {
-            showIncomingMessages = show; // Update global state first
+            showIncomingMessages = show;
             saveShowIncomingMessagesPreference(show);
             toggleIncomingMessagesSectionVisibilityUI(show);
         };
 
         function toggleIncomingMessagesSectionVisibilityUI(showSetting) {
-            // This function now correctly uses the 'showSetting' parameter which is the persisted user preference
             autoRefreshSettingsContainer.classList.toggle('hidden', !showSetting);
 
-            if (showSetting) { // Incoming messages CAN be shown based on settings
+            if (showSetting) {
                 mobileChatViewToggleBtn.classList.remove('hidden');
 
-                // Desktop specific layout (md:w-1/2 for both columns, md:flex-row for container)
                 senderAndLogsColumn.classList.remove('md:w-full', 'mx-auto');
                 senderAndLogsColumn.classList.add('md:w-1/2');
                 incomingMessagesSectionContainer.classList.remove('md:w-full', 'mx-auto');
                 incomingMessagesSectionContainer.classList.add('md:w-1/2');
 
-                mainContentFlexContainer.classList.remove('items-center');
-                mainContentFlexContainer.classList.add('md:flex-row'); // Desktop uses flex-row
-                mainContentFlexContainer.classList.remove('flex-col'); // Remove flex-col for desktop if present
+                mainContentFlexContainer.classList.remove('items-center', 'flex-col');
+                mainContentFlexContainer.classList.add('md:flex-row');
 
-                if (window.innerWidth < 768) { // Mobile: Apply default sender view
+                if (window.innerWidth < 768) {
                     applyMobileViewState(false);
-                } else { // Desktop: Ensure both sections are visible
+                } else {
                     senderAndLogsColumn.classList.remove('hidden');
                     incomingMessagesSectionContainer.classList.remove('hidden');
-                    mainContentFlexContainer.classList.remove('mobile-chat-view'); // Not in mobile chat view on desktop
-                    if(appFooter) appFooter.classList.remove('hidden'); // Footer visible on desktop
+                    mainContentFlexContainer.classList.remove('mobile-chat-active-state');
+                    incomingMessagesSectionContainer.classList.remove('mobile-fullscreen-chat');
                 }
 
-            } else { // Incoming messages are turned OFF in settings
+            } else {
                 incomingMessagesSectionContainer.classList.add('hidden');
+                incomingMessagesSectionContainer.classList.remove('mobile-fullscreen-chat');
                 mobileChatViewToggleBtn.classList.add('hidden');
 
                 senderAndLogsColumn.classList.remove('hidden', 'md:w-1/2');
-                senderAndLogsColumn.classList.add('w-full'); // Full width on all screens
+                senderAndLogsColumn.classList.add('w-full');
 
                 mainContentFlexContainer.classList.add('flex-col');
-                mainContentFlexContainer.classList.remove('md:flex-row', 'mobile-chat-view');
-                isMobileChatViewActive = false; // Reset mobile chat view state
-                if(appFooter) appFooter.classList.remove('hidden');
+                mainContentFlexContainer.classList.remove('md:flex-row', 'mobile-chat-active-state');
+                isMobileChatViewActive = false;
             }
 
             if (!showSetting) stopAutoRefresh();
@@ -1058,13 +1088,12 @@
         }
 
         window.toggleMobileChatView = (forceShowMessages = null) => {
-            // This function is only for mobile interaction IF incoming messages are enabled by settings
             if (window.innerWidth >= 768 || !showIncomingMessages) return;
 
             let nextState;
             if (forceShowMessages === true) nextState = true;
             else if (forceShowMessages === false) nextState = false;
-            else nextState = !isMobileChatViewActive; // Toggle current state
+            else nextState = !isMobileChatViewActive;
 
             applyMobileViewState(nextState);
         };
@@ -1073,7 +1102,7 @@
             loadThemePreference();
             await loadLanguagePreference();
 
-            loadShowIncomingMessagesPreference(); // This sets up initial visibility based on settings
+            loadShowIncomingMessagesPreference();
             loadAutoRefreshPreference();
             loadBotsFromLocalStorage();
 
@@ -1081,20 +1110,31 @@
 
             if (bots.length === 0) {
                  currentBotNameDisplay.innerHTML = `${_('defaultBotNameDisplay')} <i class="fas fa-robot text-3xl accent-theme-text ltr:ml-2 rtl:mr-2"></i>`;
-                 // If incoming messages are allowed by settings but no bot, still hide the section initially
-                 if(showIncomingMessages) { // Check the setting, not the dynamic state
+                 if(showIncomingMessages) {
                     incomingMessagesSectionContainer.classList.add('hidden');
                  }
             }
-
-            // Initial state for mobile if showIncomingMessages is true is handled by loadShowIncomingMessagesPreference -> toggleIncomingMessagesSectionVisibilityUI -> applyMobileViewState(false)
-            // For desktop, the default classes and toggleIncomingMessagesSectionVisibilityUI handle layout.
 
             if (chatInputMessage) {
                 chatInputMessage.addEventListener('focus', () => {
                     if (window.innerWidth < 768) {
                         setTimeout(() => {
-                            chatInputMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            // USER REQUEST: Use fixed offset for scroll calculation if in fullscreen chat
+                            let totalOffset = 0;
+                            if (isMobileChatViewActive && incomingMessagesSectionContainer.classList.contains('mobile-fullscreen-chat')) {
+                                totalOffset = 103; // Use the fixed 103px
+                            } else if (mainHeader) { // Fallback to dynamic if not in fullscreen chat or header is relevant
+                                totalOffset = mainHeader.offsetHeight;
+                                if (botListDropdown && !botListDropdown.classList.contains('hidden')) {
+                                    totalOffset += botListDropdown.offsetHeight;
+                                }
+                            }
+
+                            const elementRect = chatInputMessage.getBoundingClientRect();
+                            const absoluteElementTop = elementRect.top + window.pageYOffset;
+                            const scrollToPosition = absoluteElementTop - totalOffset - 10; // 10px buffer
+
+                            window.scrollTo({ top: scrollToPosition, behavior: 'smooth' });
                         }, 350);
                     }
                 });
@@ -1232,6 +1272,10 @@
             botListDropdown.classList.toggle('hidden');
             botListArrow.classList.toggle('fa-chevron-down');
             botListArrow.classList.toggle('fa-chevron-up');
+            // After toggling the dropdown, if on mobile and in chat view, readjust layout
+            if (window.innerWidth < 768 && isMobileChatViewActive) {
+                applyMobileViewState(true);
+            }
         }
 
         window.selectBot = (botId) => {
@@ -1247,20 +1291,19 @@
 
             const selected = bots.find(b => b.id === botId);
             if (selected) {
-                currentBotNameDisplay.innerHTML = `<i class="fas fa-robot text-3xl accent-theme-text ltr:mr-2 rtl:ml-2"></i> ${selected.name}`;
+                currentBotNameDisplay.innerHTML = `<i class="fas fa-robot text-3xl accent-theme-text ltr:ml-2 rtl:ml-2"></i> ${selected.name}`;
                 renderChatIdTags(selected);
                 chatIdSelectionSection.classList.remove('hidden');
 
-                // Control visibility based on settings and screen size
                 if (showIncomingMessages) {
                     incomingMessagesSectionContainer.classList.remove('hidden');
                     if (window.innerWidth < 768) {
-                        applyMobileViewState(false); // Default to sender view on mobile
+                        applyMobileViewState(false);
                     } else {
-                        // Desktop: ensure both columns are visible if incoming messages are enabled
                         senderAndLogsColumn.classList.remove('hidden');
                         incomingMessagesSectionContainer.classList.remove('hidden');
-                        mainContentFlexContainer.classList.remove('mobile-chat-view');
+                        mainContentFlexContainer.classList.remove('mobile-chat-active-state');
+                        incomingMessagesSectionContainer.classList.remove('mobile-fullscreen-chat');
                     }
                 } else {
                     incomingMessagesSectionContainer.classList.add('hidden');
