@@ -1,0 +1,2337 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مرسل بوت تليجرام المطور - واجهة محسنة للهاتف</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* Custom scrollbar for webkit browsers */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937; /* dark:bg-gray-800, adjusted for true black */
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563; /* dark:bg-gray-600, adjusted */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280; /* dark:bg-gray-500, adjusted */
+        }
+
+        body {
+            transition: background-color 0.3s ease, color 0.3s ease;
+            font-family: 'Inter', 'Segoe UI', 'Cairo', sans-serif;
+        }
+
+        .light-mode {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f7fafc;
+            --bg-tertiary: #e2e8f0;
+            --text-primary: #1a202c;
+            --text-secondary: #4a5568;
+            --border-color: #cbd5e0;
+            --primary-accent: #4299e1;
+            --primary-accent-hover: #2b6cb0;
+            --danger-accent: #e53e3e;
+            --danger-accent-hover: #c53030;
+            --reply-bg: #e9e9e9;
+            --conversation-hover-bg: #edf2f7;
+            --message-container-bg: #f0f2f5;
+            --sent-bubble-bg: #dcf8c6;
+            --sent-bubble-text: #111b21;
+            --received-bubble-bg: #ffffff;
+            --received-bubble-text: #111b21;
+            --chat-input-bg: #ffffff;
+        }
+
+        .dark-mode {
+            --bg-primary: #000000;
+            --bg-secondary: #111827;
+            --bg-tertiary: #1f2937;
+            --text-primary: #e5e7eb;
+            --text-secondary: #9ca3af;
+            --border-color: #374151;
+            --primary-accent: #00ffd5;
+            --primary-accent-hover: #00c7a3;
+            --danger-accent: #fc8181;
+            --danger-accent-hover: #f56565;
+            --reply-bg: #263038;
+            --conversation-hover-bg: #1f2937;
+            --message-container-bg: #0b141a;
+            --sent-bubble-bg: #005c4b;
+            --sent-bubble-text: #e9edef;
+            --received-bubble-bg: #202c33;
+            --received-bubble-text: #e9edef;
+            --chat-input-bg: #202c33;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        .bg-theme-primary { background-color: var(--bg-primary); }
+        .bg-theme-secondary { background-color: var(--bg-secondary); }
+        .bg-theme-tertiary { background-color: var(--bg-tertiary); }
+        .text-theme-primary { color: var(--text-primary); }
+        .text-theme-secondary { color: var(--text-secondary); }
+        .border-theme { border-color: var(--border-color); }
+        .accent-theme { background-color: var(--primary-accent); color: var(--bg-primary); }
+        .accent-theme-text { color: var(--primary-accent); }
+        .accent-theme-hover:hover { background-color: var(--primary-accent-hover); }
+        .danger-theme { background-color: var(--danger-accent); color: var(--bg-primary); }
+        .danger-theme-hover:hover { background-color: var(--danger-accent-hover); }
+
+
+        input, select, textarea {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        input::placeholder, textarea::placeholder {
+            color: var(--text-secondary);
+        }
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 40;
+        }
+        .chat-id-tag {
+            cursor: pointer;
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+            position: relative;
+            padding-left: 0.5rem;
+            padding-right: 28px;
+        }
+        html[dir="ltr"] .chat-id-tag {
+            padding-right: 0.5rem;
+            padding-left: 28px;
+        }
+        .chat-id-tag .delete-chat-id-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 1;
+            transition: color 0.2s ease;
+            padding: 0 4px;
+            font-size: 0.7rem;
+            line-height: 1;
+        }
+        html[dir="rtl"] .chat-id-tag .delete-chat-id-btn {
+            right: 6px;
+        }
+        html[dir="ltr"] .chat-id-tag .delete-chat-id-btn {
+            left: 6px;
+        }
+        .chat-id-tag .delete-chat-id-btn:hover {
+            color: var(--danger-accent);
+        }
+
+        .chat-id-tag.selected {
+            background-color: var(--primary-accent);
+            color: var(--bg-primary);
+            border-color: var(--primary-accent-hover);
+        }
+        .chat-id-tag.deselected {
+            background-color: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px dashed var(--border-color);
+        }
+        .conversation-list-item {
+             transition: background-color 0.2s ease;
+        }
+        .conversation-list-item:hover {
+            background-color: var(--conversation-hover-bg);
+        }
+        .conversation-list-item.active {
+            background-color: var(--primary-accent);
+            color: var(--bg-primary);
+        }
+        .conversation-list-item.active .text-theme-secondary {
+            color: var(--bg-primary) !important;
+            opacity: 0.8;
+        }
+        .conversation-list-item.active:hover {
+             background-color: var(--primary-accent);
+        }
+        .message-bubble {
+            max-width: 75%;
+            word-wrap: break-word;
+            position: relative;
+            padding: 8px 12px;
+            border-radius: 12px;
+        }
+        .message-bubble:hover .delete-message-btn {
+            opacity: 1;
+        }
+        .delete-message-btn {
+            position: absolute;
+            top: -5px;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 50%;
+            background-color: rgba(0,0,0,0.1);
+            font-size: 0.7rem;
+            line-height: 1;
+            z-index: 10;
+        }
+        .message-bubble.sent .delete-message-btn {
+            left: -5px;
+        }
+        .message-bubble.received .delete-message-btn {
+            right: -5px;
+        }
+        html[dir="rtl"] .message-bubble.sent .delete-message-btn {
+            right: -5px;
+            left: auto;
+        }
+        html[dir="rtl"] .message-bubble.received .delete-message-btn {
+            left: -5px;
+            right: auto;
+        }
+
+        .dark-mode .delete-message-btn {
+            background-color: rgba(255,255,255,0.15);
+            color: var(--text-secondary);
+        }
+        .dark-mode .delete-message-btn:hover {
+            background-color: rgba(255,255,255,0.25);
+            color: var(--danger-accent);
+        }
+        .light-mode .delete-message-btn:hover {
+            background-color: rgba(0,0,0,0.2);
+            color: var(--danger-accent);
+        }
+
+
+        .message-bubble.sent {
+            background-color: var(--sent-bubble-bg);
+            color: var(--sent-bubble-text);
+            margin-left: auto;
+            margin-right: 0;
+            border-bottom-left-radius: 0;
+        }
+        html[dir="rtl"] .message-bubble.sent {
+            margin-right: auto;
+            margin-left: 0;
+            border-bottom-right-radius: 0;
+            border-bottom-left-radius: 12px;
+        }
+
+        .message-bubble.received {
+            background-color: var(--received-bubble-bg);
+            color: var(--received-bubble-text);
+            margin-right: auto;
+            margin-left: 0;
+            border-bottom-right-radius: 0;
+        }
+        html[dir="rtl"] .message-bubble.received {
+            margin-left: auto;
+            margin-right: 0;
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 12px;
+        }
+
+        .reply-preview {
+            background-color: var(--reply-bg);
+            padding: 6px 10px;
+            margin-bottom: 6px;
+            border-radius: 6px;
+            border-left: 3px solid var(--primary-accent);
+            font-size: 0.8em;
+            opacity: 0.9;
+        }
+        html[dir="rtl"] .reply-preview {
+            border-right: 3px solid var(--primary-accent);
+            border-left: none;
+        }
+        .reply-preview strong {
+            color: var(--primary-accent);
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-tertiary);
+            transition: .4s;
+            border-radius: 26px;
+            border: 1px solid var(--border-color);
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: var(--text-secondary);
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: var(--primary-accent);
+        }
+        input:checked + .slider:before {
+            transform: translateX(24px);
+            background-color: var(--bg-primary);
+        }
+        #messagesContainer {
+             background-color: var(--message-container-bg);
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+        .avatar-placeholder {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: var(--bg-primary);
+            flex-shrink: 0;
+        }
+        #chatInputContainer textarea {
+            resize: none;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        #messageDisplayArea {
+            display: flex;
+            flex-direction: column;
+        }
+        #incomingMessagesSection .chat-area-container {
+             min-height: 300px;
+             max-height: calc(100vh - 200px);
+             height: 65vh;
+        }
+        @media (max-width: 767px) {
+            /* Default mobile: sender column takes full width, incoming is handled by JS */
+            #senderAndLogsColumn {
+                width: 100% !important; /* Ensure full width initially on mobile */
+            }
+             /* Initially hide incoming messages section on mobile unless toggled */
+             #incomingMessagesSectionContainer:not(.mobile-chat-view-active) {
+                display: none;
+            }
+            #mainContentFlexContainer.mobile-chat-view #senderAndLogsColumn {
+                display: none;
+            }
+            #mainContentFlexContainer.mobile-chat-view #incomingMessagesSectionContainer {
+                display: flex !important; /* Ensure it's flex when active */
+                width: 100%;
+                max-width: 100%;
+            }
+             #incomingMessagesSection .chat-area-container {
+                flex-direction: column;
+                max-height: calc(100vh - 120px);
+                height: calc(100vh - 120px);
+            }
+            #conversationListContainer {
+                height: 30vh;
+                max-height: 200px;
+                width: 100%;
+                border-right: none !important;
+                border-left: none !important;
+                border-bottom: 1px solid var(--border-color);
+            }
+            #messageDisplayArea {
+                width: 100%;
+                flex-grow: 1;
+            }
+            #mainContentFlexContainer.mobile-chat-view + #appFooter {
+                display: none;
+            }
+        }
+
+    </style>
+</head>
+<body class="antialiased">
+
+    <div id="notification" class="fixed top-5 left-5 z-[60] p-4 rounded-md shadow-lg text-white max-w-sm hidden">
+        <p id="notificationMessage"></p>
+    </div>
+
+    <div id="settingsModal" class="fixed inset-0 z-50 items-center justify-center bg-black bg-opacity-75 hidden flex p-4">
+        <div class="bg-theme-secondary p-6 rounded-lg shadow-xl w-full max-w-md m-4">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold text-theme-primary" data-translate-key="settingsTitle">الإعدادات</h2>
+                <button onclick="toggleSettingsModal(false)" class="text-theme-secondary hover:text-theme-primary">
+                    <i class="fas fa-times fa-lg"></i>
+                </button>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-theme-secondary mb-2" data-translate-key="themeLabel">السمة (Theme)</label>
+                <div class="flex items-center space-x-4 rtl:space-x-reverse">
+                    <button id="lightModeBtn" onclick="setTheme('light')" class="py-2 px-4 rounded-md border border-theme text-theme-primary">
+                        <i class="fas fa-sun ltr:mr-2 rtl:ml-2"></i><span data-translate-key="lightTheme">فاتح</span>
+                    </button>
+                    <button id="darkModeBtn" onclick="setTheme('dark')" class="py-2 px-4 rounded-md border border-theme text-theme-primary">
+                        <i class="fas fa-moon ltr:mr-2 rtl:ml-2"></i><span data-translate-key="darkTheme">داكن</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-theme-secondary mb-2" data-translate-key="languageLabel">اللغة (Language)</label>
+                <div class="flex items-center space-x-4 rtl:space-x-reverse">
+                    <button id="langArBtn" onclick="setLanguage('ar')" class="py-2 px-4 rounded-md border border-theme text-theme-primary">
+                        <span class="fi fi-sa ltr:mr-2 rtl:ml-2"></span>العربية
+                    </button>
+                    <button id="langEnBtn" onclick="setLanguage('en')" class="py-2 px-4 rounded-md border border-theme text-theme-primary">
+                        <span class="fi fi-gb ltr:mr-2 rtl:ml-2"></span>English
+                    </button>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-theme-secondary mb-2" data-translate-key="showIncomingMessagesLabel">إظهار قسم الرسائل الواردة</label>
+                <div class="flex items-center">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showIncomingMessagesToggle" onchange="toggleIncomingMessagesSectionVisibility(this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div id="autoRefreshSettingsContainer" class="mb-6 hidden">
+                <label class="block text-sm font-medium text-theme-secondary mb-2" data-translate-key="autoRefreshLabel">التحديث التلقائي للرسائل</label>
+                <div class="flex items-center justify-between">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="autoRefreshToggle" onchange="toggleAutoRefresh(this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                    <div class="flex items-center ltr:ml-3 rtl:mr-3">
+                        <input type="number" id="autoRefreshIntervalInput" min="10" value="30" class="w-20 p-1.5 text-sm rounded-md border-theme text-center">
+                        <span class="ltr:ml-2 rtl:mr-2 text-sm text-theme-secondary" data-translate-key="secondsUnit">ثانية</span>
+                    </div>
+                </div>
+                 <p id="autoRefreshStatus" class="mt-2 text-xs text-theme-secondary"></p>
+            </div>
+
+             <div class="mt-8 text-left rtl:text-right">
+                <button onclick="toggleSettingsModal(false)" class="px-4 py-2 rounded-md accent-theme accent-theme-hover" data-translate-key="closeButton">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="appContainer" class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-full md:max-w-6xl">
+        <header class="flex justify-between items-center mb-6 pb-4 border-b border-theme">
+            <div class="flex items-center space-x-3 rtl:space-x-reverse cursor-pointer" onclick="toggleBotListDropdown()">
+                <i id="botListArrow" class="fas fa-chevron-down text-theme-secondary"></i>
+                <h1 id="currentBotNameDisplay" class="text-2xl sm:text-3xl font-bold text-theme-primary" data-translate-key="defaultBotNameDisplay">بوت تليجرام</h1>
+            </div>
+            <div class="flex items-center space-x-2 rtl:space-x-reverse">
+                 <button id="mobileChatViewToggleBtn" onclick="toggleMobileChatView()" class="p-2 rounded-full hover:bg-theme-tertiary text-theme-secondary hover:text-theme-primary md:hidden">
+                    <i class="fas fa-comments"></i>
+                 </button>
+                 <button onclick="toggleSettingsModal(true)" data-translate-title="settingsButtonTitle" title="الإعدادات" class="p-2 rounded-full hover:bg-theme-tertiary text-theme-secondary hover:text-theme-primary">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <button onclick="editSelectedBot()" data-translate-title="editBotButtonTitle" title="تعديل البوت المحدد" id="editBotBtn" class="p-2 rounded-full hover:bg-theme-tertiary text-theme-secondary hover:text-theme-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="openBotForm(null)" data-translate-title="addBotButtonTitle" title="إضافة بوت جديد" class="p-2 rounded-full hover:bg-theme-tertiary text-theme-secondary hover:text-theme-primary">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+        </header>
+
+        <div id="botListDropdown" class="hidden bg-theme-secondary shadow-lg rounded-md p-4 mb-6 max-h-60 overflow-y-auto">
+            <p id="noBotsMessage" class="text-theme-secondary text-center hidden" data-translate-key="noBotsMessage">لا توجد بوتات مهيأة بعد. قم بإضافة واحد!</p>
+            <ul id="botListUl" class="space-y-2"></ul>
+        </div>
+
+        <div id="botFormModal" class="fixed inset-0 z-50 items-center justify-center bg-black bg-opacity-75 hidden flex p-4">
+            <div class="bg-theme-secondary p-6 rounded-lg shadow-xl w-full max-w-lg">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 id="botFormTitle" class="text-xl font-semibold text-theme-primary" data-translate-key="addBotFormTitle">إضافة بوت</h3>
+                    <button onclick="closeBotForm()" class="text-theme-secondary hover:text-theme-primary">
+                        <i class="fas fa-times fa-lg"></i>
+                    </button>
+                </div>
+                <input type="hidden" id="botIdInputHidden">
+                <div class="space-y-4">
+                    <div>
+                        <label for="botNameInput" class="block text-sm font-medium text-theme-secondary mb-1" data-translate-key="botNameLabel">اسم البوت</label>
+                        <input type="text" id="botNameInput" data-translate-placeholder="botNamePlaceholder" placeholder="مثال: بوتي الرائع" class="w-full p-3 rounded-md text-sm">
+                    </div>
+                    <div>
+                        <label for="botTokenInput" class="block text-sm font-medium text-theme-secondary mb-1" data-translate-key="botTokenLabel">توكن البوت (Token)</label>
+                        <input type="text" id="botTokenInput" placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11" class="w-full p-3 rounded-md text-sm" style="direction: ltr;">
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-sm font-medium text-theme-secondary" data-translate-key="chatIdsLabel">معرفات الدردشة (Chat IDs)</label>
+                            <button type="button" id="fetchChatIdsBtn" onclick="fetchChatIdsForBotForm()" class="px-3 py-1.5 text-xs rounded-md border border-theme text-theme-primary hover:bg-theme-tertiary disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                <i class="fas fa-sync-alt ltr:mr-1 rtl:ml-1"></i> <span data-translate-key="fetchChatIdsButton">جلب المعرفات</span>
+                                <i id="fetchChatIdsSpinner" class="fas fa-spinner fa-spin ltr:ml-1 rtl:mr-1 hidden"></i>
+                            </button>
+                        </div>
+                        <div id="chatIdFieldsContainer" class="space-y-3 max-h-48 overflow-y-auto p-2 border border-theme rounded-md"></div>
+                        <button type="button" onclick="addChatIdFieldToForm()" class="mt-2 px-3 py-1.5 text-sm rounded-md border border-theme text-theme-primary hover:bg-theme-tertiary">
+                            <i class="fas fa-plus ltr:mr-1 rtl:ml-1"></i> <span data-translate-key="addChatIdButton">إضافة معرف دردشة</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-8 flex justify-start rtl:justify-end space-x-3 rtl:space-x-reverse">
+                    <button onclick="saveBot()" class="px-6 py-2 rounded-md accent-theme accent-theme-hover font-semibold" data-translate-key="saveBotButton">حفظ البوت</button>
+                    <button onclick="closeBotForm()" class="px-4 py-2 rounded-md border border-theme text-theme-primary hover:bg-theme-tertiary" data-translate-key="cancelButton">إلغاء</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="mainContentFlexContainer" class="flex flex-col md:flex-row gap-6">
+            <div id="senderAndLogsColumn" class="w-full md:w-1/2 space-y-6 transition-all duration-300 ease-in-out">
+                <section id="chatIdSelectionSection" class="hidden">
+                    <div class="flex flex-col sm:flex-row justify-between items-center mb-3 gap-2">
+                        <h3 class="text-md font-semibold text-theme-primary">
+                            <span data-translate-key="sendToLabel">إرسال إلى</span> (<span id="selectedChatIdsCount">0</span>):
+                        </h3>
+                        <input type="search" id="searchChatIdInput" data-translate-placeholder="searchChatIdPlaceholder" placeholder="بحث بالاسم أو المعرف..." class="p-2 text-sm rounded-md border-theme w-full sm:w-auto">
+                    </div>
+                     <div class="flex flex-wrap gap-2 mb-3">
+                        <button onclick="selectAllChatIds(true)" class="text-xs px-2 py-1 rounded-md border border-theme hover:bg-theme-tertiary" data-translate-key="selectAllButton">تحديد الكل</button>
+                        <button onclick="selectAllChatIds(false)" class="text-xs px-2 py-1 rounded-md border border-theme hover:bg-theme-tertiary" data-translate-key="deselectAllButton">إلغاء تحديد الكل</button>
+                        <button onclick="invertChatIdSelection()" class="text-xs px-2 py-1 rounded-md border border-theme hover:bg-theme-tertiary" data-translate-key="invertSelectionButton">عكس التحديد</button>
+                    </div>
+                    <div id="chatIdTagsContainer" class="flex flex-wrap gap-2 p-3 bg-theme-secondary rounded-md shadow max-h-40 overflow-y-auto"></div>
+                </section>
+
+                <main id="messageSenderSection" class="bg-theme-secondary shadow-lg rounded-lg p-6 space-y-6">
+                    <div>
+                        <label for="message" class="block text-lg font-medium text-theme-primary mb-2">
+                            <i class="fas fa-paper-plane ltr:mr-2 rtl:ml-2 accent-theme-text"></i><span data-translate-key="sendMessageLabel">إرسال رسالة</span>
+                        </label>
+                        <textarea id="message" rows="5" data-translate-placeholder="messagePlaceholder" placeholder="اكتب رسالتك هنا..." class="w-full p-3 rounded-md text-sm focus:ring-2 focus:ring-[var(--primary-accent)] focus:border-[var(--primary-accent)]"></textarea>
+                    </div>
+                    <div>
+                        <label for="fileInput" class="block text-sm font-medium text-theme-secondary mb-1">
+                            <i class="fas fa-paperclip ltr:mr-2 rtl:ml-2"></i><span data-translate-key="attachFilesLabel">إرفاق ملفات (اختياري)</span>
+                        </label>
+                        <input type="file" id="fileInput" multiple class="w-full text-sm p-2 rounded-md border-dashed border-2 border-theme cursor-pointer file:ltr:mr-4 file:rtl:ml-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-[var(--primary-accent)] file:text-[var(--bg-primary)] hover:file:bg-[var(--primary-accent-hover)]">
+                    </div>
+                    <button onclick="sendTelegram()" id="sendButton" class="w-full py-3 px-4 rounded-md accent-theme accent-theme-hover font-bold text-lg flex items-center justify-center space-x-2 rtl:space-x-reverse disabled:opacity-60 disabled:cursor-not-allowed">
+                        <i id="sendSpinner" class="fas fa-spinner fa-spin hidden"></i>
+                        <i id="sendButtonIcon" class="fas fa-arrow-left rtl:hidden"></i>
+                        <i id="sendButtonIconRtl" class="fas fa-arrow-right ltr:hidden"></i>
+                        <span id="sendButtonText" data-translate-key="sendButton">إرسال</span>
+                    </button>
+                    <div id="sendStatus" class="text-sm text-center min-h-[1.25rem]"></div>
+                </main>
+
+                <section id="logSection" class="mt-2">
+                    <h2 class="text-xl font-semibold text-theme-primary mb-3" data-translate-key="activityLogLabel">سجل النشاط</h2>
+                    <div id="logEntries" class="bg-theme-secondary shadow-lg rounded-lg p-4 space-y-3 max-h-80 overflow-y-auto">
+                        <p id="noLogsMessage" class="text-theme-secondary text-center" data-translate-key="noLogsYetMessage">لا يوجد نشاط بعد.</p>
+                    </div>
+                </section>
+            </div>
+
+            <div id="incomingMessagesSectionContainer" class="w-full md:w-1/2 transition-all duration-300 ease-in-out">
+                <div id="incomingMessagesSection" class="bg-theme-secondary shadow-lg rounded-lg p-4 md:p-6 h-full flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-theme-primary" data-translate-key="incomingMessagesTitle">الرسائل الواردة</h2>
+                        <button id="refreshUpdatesBtn" onclick="fetchBotUpdates(false)" class="p-2 rounded-md hover:bg-theme-tertiary text-theme-secondary" data-translate-title="refreshMessagesButtonTitle" title="تحديث الرسائل">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    <div id="updatesSpinner" class="text-center py-4 hidden">
+                         <i class="fas fa-spinner fa-spin fa-2x accent-theme-text"></i>
+                    </div>
+                    <div class="flex flex-col md:flex-row flex-grow border border-theme rounded-md overflow-hidden h-[60vh] md:h-auto md:max-h-[calc(100vh-220px)] chat-area-container">
+                        <div id="conversationListContainer" class="w-full md:w-2/5 border-b md:border-b-0 md:border-l rtl:md:border-r rtl:md:border-l-0 border-theme overflow-y-auto p-2 h-1/3 md:h-full bg-theme-tertiary md:bg-theme-secondary">
+                            <p id="noConversationsMessage" class="text-theme-secondary text-center p-2" data-translate-key="noConversationsMessage">لا توجد محادثات لعرضها.</p>
+                            <ul id="conversationList" class="space-y-1"></ul>
+                        </div>
+                        <div id="messageDisplayArea" class="w-full md:w-3/5 flex flex-col h-2/3 md:h-full">
+                            <div id="chatHeader" class="p-3 border-b border-theme hidden items-center justify-between space-x-2 rtl:space-x-reverse bg-theme-secondary flex-shrink-0">
+                                <h3 id="chattingWithAlias" class="font-semibold text-theme-primary truncate"></h3>
+                                <div class="flex items-center space-x-1 rtl:space-x-reverse">
+                                    <button id="addConversationToBotBtn" class="p-1.5 rounded-md hover:bg-theme-tertiary text-sm accent-theme-text hidden whitespace-nowrap" data-translate-title="addSenderToBotTitle" title="إضافة المرسل للبوت">
+                                        <i class="fas fa-user-plus"></i> <span data-translate-key="addSenderToBot" class="hidden sm:inline">إضافة للبوت</span>
+                                    </button>
+                                    <button id="clearConversationBtn" class="p-1.5 rounded-md hover:bg-theme-tertiary text-sm text-red-500 hover:text-red-700 hidden whitespace-nowrap" data-translate-title="clearConversationTitle" title="مسح جميع رسائل المحادثة">
+                                        <i class="fas fa-broom"></i> <span data-translate-key="clearConversation" class="hidden sm:inline">مسح الكل</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="messagesContainer" class="flex-grow overflow-y-auto p-3 space-y-3 bg-theme-primary">
+                                <p id="selectConversationMessage" class="text-theme-secondary text-center p-4" data-translate-key="selectConversationMessage">اختر محادثة لعرض الرسائل.</p>
+                            </div>
+                             <div id="chatInputContainer" class="p-3 border-t border-theme bg-theme-secondary hidden flex-shrink-0">
+                                <div class="flex items-center space-x-2 rtl:space-x-reverse">
+                                    <label for="chatInputFile" class="p-2 rounded-md hover:bg-theme-tertiary cursor-pointer">
+                                        <i class="fas fa-paperclip text-theme-secondary"></i>
+                                        <input type="file" id="chatInputFile" class="hidden" multiple onchange="handleChatInputFiles(this.files)">
+                                    </label>
+                                    <textarea id="chatInputMessage" rows="1" data-translate-placeholder="chatInputPlaceholder" placeholder="اكتب رسالة..." class="flex-grow p-2 rounded-md text-sm focus:ring-1 focus:ring-[var(--primary-accent)] focus:border-[var(--primary-accent)]" style="background-color: var(--chat-input-bg);"></textarea>
+                                    <button id="sendChatInputBtn" onclick="sendFromChatInput()" class="p-2 rounded-md accent-theme accent-theme-hover">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                                <div id="chatInputSelectedFiles" class="mt-2 text-xs text-theme-secondary"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer id="appFooter" class="text-center mt-12 py-4 border-t border-theme">
+            <p class="text-sm text-theme-secondary">&copy; <span id="currentYear"></span> <span data-translate-key="footerText">مرسل بوت تليجرام المطور.</span></p>
+        </footer>
+    </div>
+
+    <script>
+        // Default bots (can be overridden by localStorage)
+        if (!window.defaultBots) {
+            window.defaultBots = [
+              {
+                name: "Main Bot (Example)",
+                token: "123456789:YOUR_MAIN_BOT_TOKEN_HERE",
+                chat_id: "YOUR_MAIN_CHAT_ID_HERE"
+              },
+              {
+                name: "Support Bot (Example)",
+                token: "987654321:YOUR_SUPPORT_BOT_TOKEN_HERE",
+                chat_id: "YOUR_SUPPORT_CHAT_ID_HERE"
+              }
+            ];
+        }
+    </script>
+    <script type="module">
+        // Global state variables
+        let bots = [];
+        let selectedBotId = null;
+        let localChatIdStates = {};
+        let currentLanguage = 'ar';
+        let translations = {};
+        let activeConversationChatId = null;
+        let allMessagesByBot = {};
+        let autoRefreshEnabled = false;
+        let autoRefreshIntervalId = null;
+        let currentAutoRefreshInterval = 30000;
+        let showIncomingMessages = true;
+        let chatInputFilesStore = [];
+        let isMobileChatViewActive = false;
+
+        // DOM Elements
+        const appContainer = document.getElementById('appContainer');
+        const mainContentFlexContainer = document.getElementById('mainContentFlexContainer');
+        const senderAndLogsColumn = document.getElementById('senderAndLogsColumn');
+        const mobileChatViewToggleBtn = document.getElementById('mobileChatViewToggleBtn');
+        const botListUl = document.getElementById('botListUl');
+        const botListDropdown = document.getElementById('botListDropdown');
+        const botListArrow = document.getElementById('botListArrow');
+        const currentBotNameDisplay = document.getElementById('currentBotNameDisplay');
+        const editBotBtn = document.getElementById('editBotBtn');
+        const noBotsMessage = document.getElementById('noBotsMessage');
+        const botFormModal = document.getElementById('botFormModal');
+        const botFormTitle = document.getElementById('botFormTitle');
+        const botIdInputHidden = document.getElementById('botIdInputHidden');
+        const botNameInput = document.getElementById('botNameInput');
+        const botTokenInput = document.getElementById('botTokenInput');
+        const chatIdFieldsContainer = document.getElementById('chatIdFieldsContainer');
+        const fetchChatIdsBtn = document.getElementById('fetchChatIdsBtn');
+        const fetchChatIdsSpinner = document.getElementById('fetchChatIdsSpinner');
+        const messageSenderSection = document.getElementById('messageSenderSection');
+        const sendButton = document.getElementById('sendButton');
+        const sendButtonText = document.getElementById('sendButtonText');
+        const sendButtonIcon = document.getElementById('sendButtonIcon');
+        const sendButtonIconRtl = document.getElementById('sendButtonIconRtl');
+        const sendSpinner = document.getElementById('sendSpinner');
+        const sendStatus = document.getElementById('sendStatus');
+        const logEntriesContainer = document.getElementById('logEntries');
+        const noLogsMessage = document.getElementById('noLogsMessage');
+        const settingsModal = document.getElementById('settingsModal');
+        const lightModeBtn = document.getElementById('lightModeBtn');
+        const darkModeBtn = document.getElementById('darkModeBtn');
+        const langArBtn = document.getElementById('langArBtn');
+        const langEnBtn = document.getElementById('langEnBtn');
+        const notificationDiv = document.getElementById('notification');
+        const notificationMessage = document.getElementById('notificationMessage');
+        const chatIdSelectionSection = document.getElementById('chatIdSelectionSection');
+        const searchChatIdInput = document.getElementById('searchChatIdInput');
+        const chatIdTagsContainer = document.getElementById('chatIdTagsContainer');
+        const selectedChatIdsCount = document.getElementById('selectedChatIdsCount');
+        const incomingMessagesSectionContainer = document.getElementById('incomingMessagesSectionContainer');
+        const incomingMessagesSection = document.getElementById('incomingMessagesSection');
+        const updatesSpinner = document.getElementById('updatesSpinner');
+        const conversationListContainer = document.getElementById('conversationListContainer');
+        const noConversationsMessage = document.getElementById('noConversationsMessage');
+        const conversationList = document.getElementById('conversationList');
+        const messageDisplayArea = document.getElementById('messageDisplayArea');
+        const chatHeader = document.getElementById('chatHeader');
+        const chattingWithAlias = document.getElementById('chattingWithAlias');
+        const addConversationToBotBtn = document.getElementById('addConversationToBotBtn');
+        const clearConversationBtn = document.getElementById('clearConversationBtn');
+        const messagesContainer = document.getElementById('messagesContainer');
+        const selectConversationMessage = document.getElementById('selectConversationMessage');
+        const autoRefreshToggle = document.getElementById('autoRefreshToggle');
+        const autoRefreshStatus = document.getElementById('autoRefreshStatus');
+        const showIncomingMessagesToggle = document.getElementById('showIncomingMessagesToggle');
+        const autoRefreshSettingsContainer = document.getElementById('autoRefreshSettingsContainer');
+        const autoRefreshIntervalInput = document.getElementById('autoRefreshIntervalInput');
+        const chatInputContainer = document.getElementById('chatInputContainer');
+        const chatInputMessage = document.getElementById('chatInputMessage');
+        const sendChatInputBtn = document.getElementById('sendChatInputBtn');
+        const chatInputFile = document.getElementById('chatInputFile');
+        const chatInputSelectedFiles = document.getElementById('chatInputSelectedFiles');
+        const appFooter = document.getElementById('appFooter');
+
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+        botTokenInput.addEventListener('input', () => {
+            fetchChatIdsBtn.disabled = !botTokenInput.value.trim();
+        });
+        autoRefreshIntervalInput.addEventListener('change', () => {
+            let newInterval = parseInt(autoRefreshIntervalInput.value, 10) * 1000;
+            if (isNaN(newInterval) || newInterval < 10000) {
+                newInterval = 10000;
+                autoRefreshIntervalInput.value = 10;
+            }
+            currentAutoRefreshInterval = newInterval;
+            localStorage.setItem('telegramSenderAutoRefreshInterval', currentAutoRefreshInterval.toString());
+            updateAutoRefreshStatusText();
+            if (autoRefreshEnabled && selectedBotId && showIncomingMessages) {
+                startAutoRefresh();
+            }
+        });
+        chatInputMessage.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendFromChatInput();
+            }
+        });
+        chatInputMessage.addEventListener('input', () => {
+            chatInputMessage.style.height = 'auto';
+            chatInputMessage.style.height = (chatInputMessage.scrollHeight) + 'px';
+        });
+        searchChatIdInput.addEventListener('input', () => {
+            if(selectedBotId) {
+                const bot = bots.find(b => b.id === selectedBotId);
+                if (bot) renderChatIdTags(bot);
+            }
+        });
+
+        async function fetchTranslations(lang) {
+            try {
+                if (lang === 'en') {
+                    translations = {
+                        settingsTitle: "Settings", themeLabel: "Theme", lightTheme: "Light", darkTheme: "Dark", languageLabel: "Language", closeButton: "Close", defaultBotNameDisplay: "Telegram Bot", noBotsMessage: "No bots configured yet. Add one!", addBotFormTitle: "Add Bot", editBotFormTitle: "Edit Bot", botNameLabel: "Bot Name", botNamePlaceholder: "E.g., My Awesome Bot", botTokenLabel: "Bot Token", chatIdsLabel: "Chat IDs", addChatIdButton: "Add Chat ID", chatIdPlaceholder: "Chat ID (number)", aliasPlaceholder: "Alias (optional)", saveBotButton: "Save Bot", cancelButton: "Cancel", sendToLabel: "Send to", sendMessageLabel: "Send Message", messagePlaceholder: "Type your message here...", attachFilesLabel: "Attach Files (Optional)", sendButton: "Send", activityLogLabel: "Activity Log", noLogsYetMessage: "No activity yet.", footerText: "Advanced Telegram Bot Sender by AhmedAkram.", settingsButtonTitle: "Settings", editBotButtonTitle: "Edit Selected Bot", addBotButtonTitle: "Add New Bot", deleteBotTitle: "Delete Bot", removeChatIdTitle: "Remove Chat ID", botSelectedNotification: "Bot \"{botName}\" selected.", themeChangeNotification: "Theme set to {themeName}.", languageChangeNotification: "Language set to {langName}.", saveBotSuccessNotification: "Bot \"{botName}\" saved successfully.", addBotSuccessNotification: "Bot \"{botName}\" added successfully.", deleteBotSuccessNotification: "Bot \"{botName}\" deleted successfully.", genericErrorNotification: "An error occurred.", allFieldsRequiredNotification: "Name, Token, and at least one Chat ID are required.", invalidBotTokenNotification: "Invalid Bot Token format.", invalidChatIdNotification: "Invalid Chat ID: \"{chatId}\". Must be a number.", atLeastOneChatIdNotification: "At least one Chat ID is required.", confirmDeleteBotPrompt: "To confirm, type the name of the bot \"{botName}\" you want to delete:", deleteNotConfirmedNotification: "Deletion not confirmed.", noBotSelectedError: "No bot selected. Please select a bot first.", botNotFoundForSendingError: "Selected bot not found. Please try again.", noChatIdForBotError: "No Chat ID configured for the selected bot.", noMessageOrFileError: "Please enter a message or select a file to send.", sendingMessageStatus: "Sending...", sentSuccessfullyStatus: "Sent successfully to {count} recipient(s)!", sentWithFailuresStatus: "Sent to {successCount}, but {errorCount} failed. Check logs.", sendFailedStatus: "Failed to send to {errorCount} recipient(s). Check logs.", fileSentLog: "File \"{fileName}\" sent to {recipient} via {botName}.", messageSentLog: "Message sent to {recipient} via {botName}.", sendFailedLog: "Failed to send to {recipient} via {botName}. Error: {errorMessage}", incomingMessagesTitle: "Incoming Messages", refreshMessagesButtonTitle: "Refresh Messages", noConversationsMessage: "No conversations to display.", selectConversationMessage: "Select a conversation to view messages.", fetchingUpdatesMessage: "Fetching updates...", updatesFetchedMessage: "Updates fetched successfully.", noNewUpdatesMessage: "No new updates.", errorFetchingUpdates: "Error fetching updates: {error}", Photo: "Photo", Document: "Document", Sticker: "Sticker", VoiceMessage: "Voice Message", AudioFile: "Audio File", Video: "Video", VideoNote: "Video Note", UnsupportedMessage: "Unsupported Message Type", noMessagesInConversation: "No messages in this conversation.",
+                        autoRefreshLabel: "Auto-refresh messages", autoRefreshEnabledStatus: "Enabled (every {seconds}s)", autoRefreshDisabledStatus: "Disabled", addSenderToBotTitle: "Add sender to bot", addSenderToBot: "Add to Bot", senderAddedToBotNotification: "Sender {senderName} ({senderId}) added to bot {botName}.", senderAlreadyExistsNotification: "Sender {senderName} ({senderId}) already exists in bot {botName}.", cannotAddGroupToBotNotification: "Cannot add group/channel chats directly to bot recipients this way.",
+                        fetchChatIdsButton: "Fetch Chat IDs", fetchingChatIds: "Fetching Chat IDs...", noChatsFound: "No recent chats found for this bot token. Send a message to the bot first.", chatIdsFetched: "{count} Chat ID(s) fetched and populated.", tokenRequiredToFetch: "Bot token is required to fetch Chat IDs.",
+                        showIncomingMessagesLabel: "Show Incoming Messages Section", defaultAliasPrefix: "Default User",
+                        deleteSingleMessageConfirm: "Are you sure you want to delete this message locally?", messageDeletedNotification: "Message deleted locally.", clearConversationTitle: "Clear Conversation", clearConversationConfirm: "Are you sure you want to clear all messages in this conversation locally?", conversationClearedNotification: "Conversation cleared locally.", secondsUnit: "seconds",
+                        chatInputPlaceholder: "Type a message...", filesSelected: "{count} file(s) selected",
+                        searchChatIdPlaceholder: "Search by name or ID...", selectAllButton: "Select All", deselectAllButton: "Deselect All", invertSelectionButton: "Invert Selection",
+                        toggleChatViewSender: "Show Sender View", toggleChatViewMessages: "Show Messages View", chatIdRemovedNotification: "Chat ID {chatId} removed from bot."
+                    };
+                } else {
+                    translations = {
+                        settingsTitle: "الإعدادات", themeLabel: "السمة", lightTheme: "فاتح", darkTheme: "داكن", languageLabel: "اللغة", closeButton: "إغلاق", defaultBotNameDisplay: "بوت تليجرام", noBotsMessage: "لا توجد بوتات مهيأة بعد. قم بإضافة واحد!", addBotFormTitle: "إضافة بوت", editBotFormTitle: "تعديل البوت", botNameLabel: "اسم البوت", botNamePlaceholder: "مثال: بوتي الرائع", botTokenLabel: "توكن البوت (Token)", chatIdsLabel: "معرفات الدردشة", addChatIdButton: "إضافة معرف دردشة", chatIdPlaceholder: "معرف الدردشة (رقم)", aliasPlaceholder: "الاسم المستعار (اختياري)", saveBotButton: "حفظ البوت", cancelButton: "إلغاء", sendToLabel: "إرسال إلى", sendMessageLabel: "إرسال رسالة", messagePlaceholder: "اكتب رسالتك هنا...", attachFilesLabel: "إرفاق ملفات (اختياري)", sendButton: "إرسال", activityLogLabel: "سجل النشاط", noLogsYetMessage: "لا يوجد نشاط بعد.", footerText: "بوت تيليجرام المتقدم المرسل بواسطة أحمد أكرم.", settingsButtonTitle: "الإعدادات", editBotButtonTitle: "تعديل البوت المحدد", addBotButtonTitle: "إضافة بوت جديد", deleteBotTitle: "حذف البوت", removeChatIdTitle: "إزالة معرف الدردشة", botSelectedNotification: "تم اختيار البوت \"{botName}\".", themeChangeNotification: "تم تغيير السمة إلى {themeName}.", languageChangeNotification: "تم تغيير اللغة إلى {langName}.", saveBotSuccessNotification: "تم حفظ البوت \"{botName}\" بنجاح.", addBotSuccessNotification: "تمت إضافة البوت \"{botName}\" بنجاح.", deleteBotSuccessNotification: "تم حذف البوت \"{botName}\" بنجاح.", genericErrorNotification: "حدث خطأ ما.", allFieldsRequiredNotification: "الاسم والتوكن ومعرف دردشة واحد على الأقل مطلوبة.", invalidBotTokenNotification: "صيغة توكن البوت غير صالحة.", invalidChatIdNotification: "معرف الدردشة \"{chatId}\" غير صالح. يجب أن يكون رقمًا.", atLeastOneChatIdNotification: "يجب إضافة معرف دردشة واحد على الأقل.", confirmDeleteBotPrompt: "للتأكيد، اكتب اسم البوت \"{botName}\" الذي تريد حذفه:", deleteNotConfirmedNotification: "لم يتم تأكيد الحذف.", noBotSelectedError: "لم يتم اختيار أي بوت. يرجى اختيار بوت أولاً.", botNotFoundForSendingError: "البوت المختار غير موجود. يرجى المحاولة مرة أخرى.", noChatIdForBotError: "لا يوجد معرف دردشة مهيأ للبوت المختار.", noMessageOrFileError: "يرجى إدخال رسالة أو اختيار ملف للإرسال.", sendingMessageStatus: "جاري الإرسال...", sentSuccessfullyStatus: "تم الإرسال بنجاح إلى {count} مستلم(ين)!", sentWithFailuresStatus: "أُرسلت إلى {successCount}، وفشلت لـ {errorCount}. تحقق من السجل.", sendFailedStatus: "فشل الإرسال لـ {errorCount} مستلم(ين). تحقق من السجل.", fileSentLog: "تم إرسال الملف \"{fileName}\" إلى {recipient} عبر {botName}.", messageSentLog: "تم إرسال الرسالة إلى {recipient} عبر {botName}.", sendFailedLog: "فشل الإرسال إلى {recipient} عبر {botName}. الخطأ: {errorMessage}", incomingMessagesTitle: "الرسائل الواردة", refreshMessagesButtonTitle: "تحديث الرسائل", noConversationsMessage: "لا توجد محادثات لعرضها.", selectConversationMessage: "اختر محادثة لعرض الرسائل.", fetchingUpdatesMessage: "جاري جلب التحديثات...", updatesFetchedMessage: "تم جلب التحديثات بنجاح.", noNewUpdatesMessage: "لا توجد تحديثات جديدة.", errorFetchingUpdates: "خطأ في جلب التحديثات: {error}", Photo: "صورة", Document: "مستند", Sticker: "ملصق", VoiceMessage: "رسالة صوتية", AudioFile: "ملف صوتي", Video: "فيديو", VideoNote: "ملاحظة فيديو", UnsupportedMessage: "نوع رسالة غير مدعوم", noMessagesInConversation: "لا توجد رسائل في هذه المحادثة.",
+                        autoRefreshLabel: "التحديث التلقائي للرسائل", autoRefreshEnabledStatus: "مفعل (كل {seconds} ثانية)", autoRefreshDisabledStatus: "معطل", addSenderToBotTitle: "إضافة المرسل للبوت", addSenderToBot: "إضافة للبوت", senderAddedToBotNotification: "تمت إضافة المرسل {senderName} ({senderId}) إلى البوت {botName}.", senderAlreadyExistsNotification: "المرسل {senderName} ({senderId}) موجود بالفعل في البوت {botName}.", cannotAddGroupToBotNotification: "لا يمكن إضافة محادثات المجموعات/القنوات مباشرة إلى مستلمي البوت بهذه الطريقة.",
+                        fetchChatIdsButton: "جلب المعرفات", fetchingChatIds: "جاري جلب المعرفات...", noChatsFound: "لم يتم العثور على محادثات حديثة لتوكن البوت هذا. أرسل رسالة إلى البوت أولاً.", chatIdsFetched: "تم جلب وتعبئة {count} معرف(ات) دردشة.", tokenRequiredToFetch: "توكن البوت مطلوب لجلب معرفات الدردشة.",
+                        showIncomingMessagesLabel: "إظهار قسم الرسائل الواردة", defaultAliasPrefix: "مستخدم افتراضي",
+                        deleteSingleMessageConfirm: "هل أنت متأكد من أنك تريد حذف هذه الرسالة محليًا؟", messageDeletedNotification: "تم حذف الرسالة محليًا.", clearConversationTitle: "مسح المحادثة", clearConversationConfirm: "هل أنت متأكد من أنك تريد مسح جميع الرسائل في هذه المحادثة محليًا؟", conversationClearedNotification: "تم مسح المحادثة محليًا.", secondsUnit: "ثانية",
+                        chatInputPlaceholder: "اكتب رسالة...", filesSelected: "{count} ملف(ات) محددة",
+                        searchChatIdPlaceholder: "بحث بالاسم أو المعرف...", selectAllButton: "تحديد الكل", deselectAllButton: "إلغاء تحديد الكل", invertSelectionButton: "عكس التحديد",
+                        toggleChatViewSender: "عرض المرسل", toggleChatViewMessages: "عرض الرسائل", chatIdRemovedNotification: "تمت إزالة معرف الدردشة {chatId} من البوت."
+                    };
+                }
+                applyTranslations();
+            } catch (error) {
+                console.error("Error fetching translations:", error);
+            }
+        }
+
+        function _(key, params = {}) {
+            let translation = translations[key] || key;
+            for (const param in params) {
+                translation = translation.replace(`{${param}}`, params[param]);
+            }
+            return translation;
+        }
+
+        function applyTranslations() {
+            document.querySelectorAll('[data-translate-key]').forEach(el => {
+                const key = el.getAttribute('data-translate-key');
+                if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                    if (el.hasAttribute('data-translate-placeholder')) {
+                         el.placeholder = _(el.getAttribute('data-translate-placeholder'));
+                    }
+                } else if (el.tagName === 'BUTTON' && el.querySelector('span')) {
+                    const span = el.querySelector('span');
+                    if (span && translations[key]) {
+                        span.innerHTML = _(key);
+                    } else if (translations[key]) {
+                        el.innerHTML = _(key);
+                    }
+                } else {
+                    if (el.childNodes.length === 1 && el.childNodes[0].nodeType === Node.TEXT_NODE) {
+                        el.textContent = _(key);
+                    } else {
+                        let textNode = Array.from(el.childNodes).find(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '');
+                        if (textNode) {
+                            textNode.textContent = _(key);
+                        } else if (el.querySelector('span[data-translate-target="true"]')) {
+                            el.querySelector('span[data-translate-target="true"]').innerHTML = _(key);
+                        } else {
+                             el.innerHTML = _(key);
+                        }
+                    }
+                }
+            });
+             document.querySelectorAll('[data-translate-title]').forEach(el => {
+                const key = el.getAttribute('data-translate-title');
+                el.title = _(key);
+            });
+
+            if (!selectedBotId) {
+                 currentBotNameDisplay.innerHTML = `${_('defaultBotNameDisplay')} <i class="fas fa-robot text-3xl accent-theme-text ltr:ml-2 rtl:mr-2"></i>`;
+            } else {
+                const currentBot = bots.find(b => b.id === selectedBotId);
+                if (currentBot) {
+                    currentBotNameDisplay.innerHTML = `<i class="fas fa-robot text-3xl accent-theme-text ltr:ml-2 rtl:ml-2"></i> ${currentBot.name}`;
+                }
+            }
+            sendButtonIcon.classList.toggle('hidden', currentLanguage === 'ar');
+            sendButtonIconRtl.classList.toggle('hidden', currentLanguage === 'en');
+            updateAutoRefreshStatusText();
+
+            document.documentElement.lang = currentLanguage;
+            document.documentElement.dir = currentLanguage === 'ar' ? 'rtl' : 'ltr';
+
+            document.querySelectorAll('.reply-preview').forEach(rp => {
+                if (currentLanguage === 'ar') {
+                    rp.style.borderRight = '3px solid var(--primary-accent)';
+                    rp.style.borderLeft = 'none';
+                } else {
+                    rp.style.borderLeft = '3px solid var(--primary-accent)';
+                    rp.style.borderRight = 'none';
+                }
+            });
+            document.querySelectorAll('.delete-message-btn').forEach(btn => {
+                const parentBubble = btn.closest('.message-bubble');
+                if (parentBubble) {
+                    if (currentLanguage === 'ar') {
+                        btn.style.left = parentBubble.classList.contains('sent') ? '2px' : 'auto';
+                        btn.style.right = parentBubble.classList.contains('received') ? '2px' : 'auto';
+                    } else {
+                        btn.style.right = parentBubble.classList.contains('sent') ? '2px' : 'auto';
+                        btn.style.left = parentBubble.classList.contains('received') ? '2px' : 'auto';
+                    }
+                }
+            });
+        }
+
+        const LS_BOTS_KEY = 'telegramSenderBots';
+        const LS_THEME_KEY = 'telegramSenderTheme';
+        const LS_LANG_KEY = 'telegramSenderLanguage';
+        const LS_AUTO_REFRESH_KEY = 'telegramSenderAutoRefresh';
+        const LS_AUTO_REFRESH_INTERVAL_KEY = 'telegramSenderAutoRefreshInterval';
+        const LS_SHOW_INCOMING_MSG_KEY = 'telegramSenderShowIncoming';
+
+        function loadBotsFromLocalStorage() {
+            const storedBots = localStorage.getItem(LS_BOTS_KEY);
+            let parsedBots = storedBots ? JSON.parse(storedBots) : [];
+
+            if (parsedBots.length === 0 && window.defaultBots && window.defaultBots.length > 0) {
+                parsedBots = window.defaultBots.map(defaultBot => {
+                    const chatIdsArray = defaultBot.chat_id ? [{
+                        id: defaultBot.chat_id.toString(),
+                        alias: `${_('defaultAliasPrefix') || 'مستخدم افتراضي'} ${defaultBot.chat_id.toString().slice(-4)}`,
+                        active: true
+                    }] : [];
+                    return {
+                        id: generateSimpleId(),
+                        name: defaultBot.name,
+                        token: defaultBot.token,
+                        chat_ids: chatIdsArray,
+                        last_update_offset: 0,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    };
+                });
+                localStorage.setItem(LS_BOTS_KEY, JSON.stringify(parsedBots));
+            }
+
+            bots = parsedBots;
+            bots.forEach(bot => {
+                if (bot.last_update_offset === undefined) bot.last_update_offset = 0;
+                if (!Array.isArray(bot.chat_ids)) bot.chat_ids = [];
+                else {
+                    bot.chat_ids = bot.chat_ids.map(cid => ({
+                        id: cid.id ? cid.id.toString() : generateSimpleId(),
+                        alias: cid.alias || `${_('defaultAliasPrefix') || 'مستخدم افتراضي'} ${cid.id ? cid.id.toString().slice(-4) : ''}`,
+                        active: cid.active !== false
+                    }));
+                }
+            });
+
+            renderBotList();
+            updateSelectedBotState();
+            if (selectedBotId) {
+                const reselectedBot = bots.find(b => b.id === selectedBotId);
+                if (reselectedBot) {
+                    renderChatIdTags(reselectedBot);
+                    if(showIncomingMessages) incomingMessagesSectionContainer.classList.remove('hidden');
+                } else {
+                    selectedBotId = null;
+                    chatIdSelectionSection.classList.add('hidden');
+                    incomingMessagesSectionContainer.classList.add('hidden');
+                    currentBotNameDisplay.innerHTML = `${_('defaultBotNameDisplay')} <i class="fas fa-robot text-3xl accent-theme-text ltr:ml-2 rtl:mr-2"></i>`;
+                }
+            } else {
+                incomingMessagesSectionContainer.classList.add('hidden');
+            }
+        }
+
+        function saveBotsToLocalStorage() {
+            localStorage.setItem(LS_BOTS_KEY, JSON.stringify(bots));
+        }
+
+        function loadThemePreference() {
+            const savedTheme = localStorage.getItem(LS_THEME_KEY);
+            const theme = savedTheme || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            applyTheme(theme);
+        }
+
+        function saveThemePreference(theme) {
+            localStorage.setItem(LS_THEME_KEY, theme);
+        }
+
+        async function loadLanguagePreference() {
+            const savedLang = localStorage.getItem(LS_LANG_KEY);
+            currentLanguage = savedLang || (navigator.language.split('-')[0] === 'en' ? 'en' : 'ar');
+            await fetchTranslations(currentLanguage);
+            updateLanguageButtonStyles();
+        }
+
+        function saveLanguagePreference(lang) {
+            localStorage.setItem(LS_LANG_KEY, lang);
+        }
+
+        function loadAutoRefreshPreference() {
+            const savedEnabled = localStorage.getItem(LS_AUTO_REFRESH_KEY);
+            autoRefreshEnabled = savedEnabled === 'true';
+            autoRefreshToggle.checked = autoRefreshEnabled;
+
+            const savedInterval = localStorage.getItem(LS_AUTO_REFRESH_INTERVAL_KEY);
+            currentAutoRefreshInterval = savedInterval ? parseInt(savedInterval, 10) : 30000;
+            if (isNaN(currentAutoRefreshInterval) || currentAutoRefreshInterval < 10000) {
+                currentAutoRefreshInterval = 10000;
+            }
+            autoRefreshIntervalInput.value = currentAutoRefreshInterval / 1000;
+
+
+            updateAutoRefreshStatusText();
+            if (autoRefreshEnabled && selectedBotId && showIncomingMessages) {
+                startAutoRefresh();
+            }
+        }
+
+        function saveAutoRefreshPreference(enabled) {
+            localStorage.setItem(LS_AUTO_REFRESH_KEY, enabled.toString());
+            localStorage.setItem(LS_AUTO_REFRESH_INTERVAL_KEY, currentAutoRefreshInterval.toString());
+        }
+
+        function loadShowIncomingMessagesPreference() {
+            const saved = localStorage.getItem(LS_SHOW_INCOMING_MSG_KEY);
+            showIncomingMessages = saved === null ? true : (saved === 'true');
+            showIncomingMessagesToggle.checked = showIncomingMessages;
+            toggleIncomingMessagesSectionVisibilityUI(showIncomingMessages);
+        }
+
+        function saveShowIncomingMessagesPreference(show) {
+            localStorage.setItem(LS_SHOW_INCOMING_MSG_KEY, show.toString());
+        }
+
+        // Helper function to update mobile chat toggle button icon and title
+        function updateMobileChatToggleButton(isActive) {
+            if (isActive) { // Chat view is active
+                mobileChatViewToggleBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                mobileChatViewToggleBtn.title = _('toggleChatViewSender');
+            } else { // Sender view is active
+                mobileChatViewToggleBtn.innerHTML = '<i class="fas fa-comments"></i>';
+                mobileChatViewToggleBtn.title = _('toggleChatViewMessages');
+            }
+        }
+
+        // Helper function to apply view state changes on mobile
+        function applyMobileViewState(showChatActive) { // showChatActive corresponds to isMobileChatViewActive
+            if (window.innerWidth >= 768 || !showIncomingMessages) return; // Only for mobile and if feature is enabled
+
+            isMobileChatViewActive = showChatActive;
+
+            senderAndLogsColumn.classList.toggle('hidden', showChatActive);
+            // Ensure senderAndLogsColumn is w-full when visible on mobile
+            senderAndLogsColumn.classList.toggle('w-full', !showChatActive);
+
+            incomingMessagesSectionContainer.classList.toggle('hidden', !showChatActive);
+             // Ensure incomingMessagesSectionContainer is w-full when visible on mobile
+            incomingMessagesSectionContainer.classList.toggle('w-full', showChatActive);
+
+
+            mainContentFlexContainer.classList.add('flex-col'); // Keep it flex-col for mobile
+            mainContentFlexContainer.classList.toggle('mobile-chat-view', showChatActive);
+
+            if (appFooter) {
+                appFooter.classList.toggle('hidden', showChatActive);
+            }
+            updateMobileChatToggleButton(showChatActive);
+        }
+
+
+        window.toggleIncomingMessagesSectionVisibility = (show) => {
+            showIncomingMessages = show; // Update global state first
+            saveShowIncomingMessagesPreference(show);
+            toggleIncomingMessagesSectionVisibilityUI(show);
+        };
+
+        function toggleIncomingMessagesSectionVisibilityUI(showSetting) {
+            // This function now correctly uses the 'showSetting' parameter which is the persisted user preference
+            autoRefreshSettingsContainer.classList.toggle('hidden', !showSetting);
+
+            if (showSetting) { // Incoming messages CAN be shown based on settings
+                mobileChatViewToggleBtn.classList.remove('hidden');
+
+                // Desktop specific layout (md:w-1/2 for both columns, md:flex-row for container)
+                senderAndLogsColumn.classList.remove('md:w-full', 'mx-auto');
+                senderAndLogsColumn.classList.add('md:w-1/2');
+                incomingMessagesSectionContainer.classList.remove('md:w-full', 'mx-auto');
+                incomingMessagesSectionContainer.classList.add('md:w-1/2');
+
+                mainContentFlexContainer.classList.remove('items-center');
+                mainContentFlexContainer.classList.add('md:flex-row'); // Desktop uses flex-row
+                mainContentFlexContainer.classList.remove('flex-col'); // Remove flex-col for desktop if present
+
+                if (window.innerWidth < 768) { // Mobile: Apply default sender view
+                    applyMobileViewState(false);
+                } else { // Desktop: Ensure both sections are visible
+                    senderAndLogsColumn.classList.remove('hidden');
+                    incomingMessagesSectionContainer.classList.remove('hidden');
+                    mainContentFlexContainer.classList.remove('mobile-chat-view'); // Not in mobile chat view on desktop
+                    if(appFooter) appFooter.classList.remove('hidden'); // Footer visible on desktop
+                }
+
+            } else { // Incoming messages are turned OFF in settings
+                incomingMessagesSectionContainer.classList.add('hidden');
+                mobileChatViewToggleBtn.classList.add('hidden');
+
+                senderAndLogsColumn.classList.remove('hidden', 'md:w-1/2');
+                senderAndLogsColumn.classList.add('w-full'); // Full width on all screens
+
+                mainContentFlexContainer.classList.add('flex-col');
+                mainContentFlexContainer.classList.remove('md:flex-row', 'mobile-chat-view');
+                isMobileChatViewActive = false; // Reset mobile chat view state
+                if(appFooter) appFooter.classList.remove('hidden');
+            }
+
+            if (!showSetting) stopAutoRefresh();
+            else if (autoRefreshEnabled && selectedBotId) startAutoRefresh();
+        }
+
+        window.toggleMobileChatView = (forceShowMessages = null) => {
+            // This function is only for mobile interaction IF incoming messages are enabled by settings
+            if (window.innerWidth >= 768 || !showIncomingMessages) return;
+
+            let nextState;
+            if (forceShowMessages === true) nextState = true;
+            else if (forceShowMessages === false) nextState = false;
+            else nextState = !isMobileChatViewActive; // Toggle current state
+
+            applyMobileViewState(nextState);
+        };
+
+        window.onload = async () => {
+            loadThemePreference();
+            await loadLanguagePreference();
+
+            loadShowIncomingMessagesPreference(); // This sets up initial visibility based on settings
+            loadAutoRefreshPreference();
+            loadBotsFromLocalStorage();
+
+            enableAppControls();
+
+            if (bots.length === 0) {
+                 currentBotNameDisplay.innerHTML = `${_('defaultBotNameDisplay')} <i class="fas fa-robot text-3xl accent-theme-text ltr:ml-2 rtl:mr-2"></i>`;
+                 // If incoming messages are allowed by settings but no bot, still hide the section initially
+                 if(showIncomingMessages) { // Check the setting, not the dynamic state
+                    incomingMessagesSectionContainer.classList.add('hidden');
+                 }
+            }
+
+            // Initial state for mobile if showIncomingMessages is true is handled by loadShowIncomingMessagesPreference -> toggleIncomingMessagesSectionVisibilityUI -> applyMobileViewState(false)
+            // For desktop, the default classes and toggleIncomingMessagesSectionVisibilityUI handle layout.
+
+            if (chatInputMessage) {
+                chatInputMessage.addEventListener('focus', () => {
+                    if (window.innerWidth < 768) {
+                        setTimeout(() => {
+                            chatInputMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }, 350);
+                    }
+                });
+            }
+        };
+
+        function enableAppControls() {
+            messageSenderSection.classList.remove('opacity-50', 'pointer-events-none');
+        }
+
+        window.setLanguage = async (lang) => {
+            currentLanguage = lang;
+            await fetchTranslations(lang);
+            updateLanguageButtonStyles();
+            saveLanguagePreference(lang);
+            showNotification(_('languageChangeNotification', {langName: _(lang === 'ar' ? 'العربية' : 'English')}), 'success');
+            if(bots.length > 0) {
+                bots.sort((a, b) => a.name.localeCompare(b.name, currentLanguage));
+                renderBotList();
+            }
+        }
+
+        function updateLanguageButtonStyles() {
+            if (currentLanguage === 'ar') {
+                langArBtn.classList.add('accent-theme');
+                langArBtn.classList.remove('border-theme', 'text-theme-primary');
+                langEnBtn.classList.remove('accent-theme');
+                langEnBtn.classList.add('border-theme', 'text-theme-primary');
+            } else {
+                langEnBtn.classList.add('accent-theme');
+                langEnBtn.classList.remove('border-theme', 'text-theme-primary');
+                langArBtn.classList.remove('accent-theme');
+                langArBtn.classList.add('border-theme', 'text-theme-primary');
+            }
+        }
+
+        window.setTheme = async (theme) => {
+            applyTheme(theme);
+            saveThemePreference(theme);
+            showNotification(_('themeChangeNotification', {themeName: _(theme === 'light' ? 'lightTheme' : 'darkTheme')}), 'success');
+        }
+
+        function applyTheme(theme) {
+            document.body.className = theme === 'dark' ? 'dark-mode antialiased' : 'light-mode antialiased';
+            if (theme === 'dark') {
+                darkModeBtn.classList.add('accent-theme');
+                darkModeBtn.classList.remove('border-theme', 'text-theme-primary');
+                lightModeBtn.classList.remove('accent-theme');
+                lightModeBtn.classList.add('border-theme', 'text-theme-primary');
+            } else {
+                lightModeBtn.classList.add('accent-theme');
+                lightModeBtn.classList.remove('border-theme', 'text-theme-primary');
+                darkModeBtn.classList.remove('accent-theme');
+                darkModeBtn.classList.add('border-theme', 'text-theme-primary');
+            }
+            if (selectedBotId) {
+                const currentBot = bots.find(b => b.id === selectedBotId);
+                if (currentBot) renderChatIdTags(currentBot);
+            }
+        }
+
+        window.toggleSettingsModal = (show) => {
+            settingsModal.classList.toggle('hidden', !show);
+            settingsModal.classList.toggle('flex', show);
+        };
+
+        function renderBotList() {
+            botListUl.innerHTML = '';
+            noBotsMessage.classList.toggle('hidden', bots.length > 0);
+
+            bots.forEach(bot => {
+                const li = document.createElement('li');
+                li.className = `p-3 rounded-md cursor-pointer flex justify-between items-center group ${selectedBotId === bot.id ? 'accent-theme' : 'hover:bg-theme-tertiary'}`;
+                li.onclick = () => selectBot(bot.id);
+
+                const botNameSpan = document.createElement('span');
+                botNameSpan.textContent = bot.name;
+                botNameSpan.className = `font-medium ${selectedBotId === bot.id ? (document.body.classList.contains('dark-mode') ? 'text-gray-900' : 'text-white') : 'text-theme-primary group-hover:text-theme-primary'}`;
+                li.appendChild(botNameSpan);
+
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'space-x-2 rtl:space-x-reverse opacity-0 group-hover:opacity-100 transition-opacity';
+                if (selectedBotId === bot.id) actionsDiv.classList.remove('opacity-0');
+
+                const editBtnElement = document.createElement('button');
+                editBtnElement.innerHTML = '<i class="fas fa-edit"></i>';
+                editBtnElement.title = _('editBotButtonTitle');
+                editBtnElement.className = `p-1 rounded ${selectedBotId === bot.id ? 'hover:bg-[var(--primary-accent-hover)]' : 'text-theme-secondary hover:text-theme-primary'}`;
+                editBtnElement.onclick = (e) => { e.stopPropagation(); openBotForm(bot.id); };
+                actionsDiv.appendChild(editBtnElement);
+
+                const deleteBtnElement = document.createElement('button');
+                deleteBtnElement.innerHTML = '<i class="fas fa-trash-alt"></i>';
+                deleteBtnElement.title = _('deleteBotTitle');
+                deleteBtnElement.className = `p-1 rounded ${selectedBotId === bot.id ? 'hover:bg-[var(--primary-accent-hover)]' : 'text-red-500 hover:text-red-700'}`;
+                deleteBtnElement.onclick = (e) => { e.stopPropagation(); removeBot(bot.id, bot.name); };
+                actionsDiv.appendChild(deleteBtnElement);
+
+                li.appendChild(actionsDiv);
+                botListUl.appendChild(li);
+            });
+        }
+
+        window.addChatIdFieldToForm = (id = '', alias = '') => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center space-x-2 rtl:space-x-reverse';
+
+            const idInput = document.createElement('input');
+            idInput.type = 'text';
+            idInput.className = 'chat-id-input w-2/5 p-2 rounded-md text-sm border-theme';
+            idInput.placeholder = _('chatIdPlaceholder');
+            idInput.value = id;
+            idInput.style.direction = 'ltr';
+
+            const aliasInput = document.createElement('input');
+            aliasInput.type = 'text';
+            aliasInput.className = 'chat-alias-input w-2/5 p-2 rounded-md text-sm border-theme';
+            aliasInput.placeholder = _('aliasPlaceholder');
+            aliasInput.value = alias;
+
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.innerHTML = `<i class="fas fa-minus-circle text-red-500 hover:text-red-700"></i>`;
+            removeBtn.title = _('removeChatIdTitle');
+            removeBtn.className = 'p-1';
+            removeBtn.onclick = () => div.remove();
+
+            div.appendChild(idInput);
+            div.appendChild(aliasInput);
+            div.appendChild(removeBtn);
+            chatIdFieldsContainer.appendChild(div);
+        }
+
+        window.toggleBotListDropdown = () => {
+            botListDropdown.classList.toggle('hidden');
+            botListArrow.classList.toggle('fa-chevron-down');
+            botListArrow.classList.toggle('fa-chevron-up');
+        }
+
+        window.selectBot = (botId) => {
+            selectedBotId = botId;
+            activeConversationChatId = null;
+            messagesContainer.innerHTML = `<p id="selectConversationMessage" class="text-theme-secondary text-center p-4">${_('selectConversationMessage')}</p>`;
+            chatHeader.classList.add('hidden');
+            addConversationToBotBtn.classList.add('hidden');
+            clearConversationBtn.classList.add('hidden');
+            chatInputContainer.classList.add('hidden');
+            conversationList.innerHTML = '';
+            noConversationsMessage.classList.remove('hidden');
+
+            const selected = bots.find(b => b.id === botId);
+            if (selected) {
+                currentBotNameDisplay.innerHTML = `<i class="fas fa-robot text-3xl accent-theme-text ltr:mr-2 rtl:ml-2"></i> ${selected.name}`;
+                renderChatIdTags(selected);
+                chatIdSelectionSection.classList.remove('hidden');
+
+                // Control visibility based on settings and screen size
+                if (showIncomingMessages) {
+                    incomingMessagesSectionContainer.classList.remove('hidden');
+                    if (window.innerWidth < 768) {
+                        applyMobileViewState(false); // Default to sender view on mobile
+                    } else {
+                        // Desktop: ensure both columns are visible if incoming messages are enabled
+                        senderAndLogsColumn.classList.remove('hidden');
+                        incomingMessagesSectionContainer.classList.remove('hidden');
+                        mainContentFlexContainer.classList.remove('mobile-chat-view');
+                    }
+                } else {
+                    incomingMessagesSectionContainer.classList.add('hidden');
+                }
+
+                allMessagesByBot[selected.id] = allMessagesByBot[selected.id] || {};
+                fetchBotUpdates(true);
+                if (autoRefreshEnabled && showIncomingMessages) {
+                    startAutoRefresh();
+                }
+            } else {
+                chatIdSelectionSection.classList.add('hidden');
+                incomingMessagesSectionContainer.classList.add('hidden');
+                stopAutoRefresh();
+            }
+            updateSelectedBotState();
+            renderBotList();
+            if (!botListDropdown.classList.contains('hidden')) {
+                 toggleBotListDropdown();
+            }
+            showNotification(_('botSelectedNotification', {botName: selected ? selected.name : ''}), 'info');
+        }
+
+        function updateSelectedBotState() {
+            const botIsSelected = selectedBotId && bots.some(b => b.id === selectedBotId);
+            editBotBtn.disabled = !botIsSelected;
+            sendButton.disabled = !botIsSelected;
+
+            if (!botIsSelected) {
+                currentBotNameDisplay.innerHTML = `${_('defaultBotNameDisplay')} <i class="fas fa-robot text-3xl accent-theme-text ltr:ml-2 rtl:mr-2"></i>`;
+                chatIdSelectionSection.classList.add('hidden');
+                incomingMessagesSectionContainer.classList.add('hidden');
+                stopAutoRefresh();
+            }
+        }
+
+        window.openBotForm = (botIdToEdit = null) => {
+            botFormModal.classList.remove('hidden');
+            botFormModal.classList.add('flex');
+            const currentToken = botTokenInput.value.trim();
+            fetchChatIdsBtn.disabled = !currentToken;
+
+            if (botIdToEdit) {
+                const bot = bots.find(b => b.id === botIdToEdit);
+                if (bot) {
+                    botFormTitle.textContent = _('editBotFormTitle');
+                    botIdInputHidden.value = bot.id;
+                    botNameInput.value = bot.name;
+                    botTokenInput.value = bot.token;
+                    fetchChatIdsBtn.disabled = !bot.token;
+                    chatIdFieldsContainer.innerHTML = '';
+                    (bot.chat_ids || []).forEach(chatConfig => {
+                        addChatIdFieldToForm(chatConfig.id, chatConfig.alias);
+                    });
+                    if ((bot.chat_ids || []).length === 0) {
+                        addChatIdFieldToForm();
+                    }
+                } else {
+                    showNotification(_('genericErrorNotification'), "error");
+                    closeBotForm();
+                    return;
+                }
+            } else {
+                botFormTitle.textContent = _('addBotFormTitle');
+                botIdInputHidden.value = '';
+                botNameInput.value = '';
+                botTokenInput.value = '';
+                fetchChatIdsBtn.disabled = true;
+                chatIdFieldsContainer.innerHTML = '';
+                addChatIdFieldToForm();
+            }
+            botNameInput.focus();
+        }
+
+        window.closeBotForm = () => {
+            botFormModal.classList.add('hidden');
+            botFormModal.classList.remove('flex');
+        }
+
+        window.editSelectedBot = () => {
+            if (selectedBotId) {
+                openBotForm(selectedBotId);
+            } else {
+                showNotification(_('noBotSelectedError'), "warning");
+            }
+        }
+
+        function generateSimpleId() {
+            return Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
+        }
+
+        window.saveBot = async () => {
+            const name = botNameInput.value.trim();
+            const token = botTokenInput.value.trim();
+
+            if (!name || !token) {
+                showNotification(_('allFieldsRequiredNotification'), "error");
+                return;
+            }
+            if (!/^\d+:[A-Za-z0-9\-_]+$/.test(token)) {
+                showNotification(_('invalidBotTokenNotification'), "error");
+                return;
+            }
+
+            const chatIdsData = [];
+            const fieldGroups = chatIdFieldsContainer.querySelectorAll('.flex.items-center');
+            let hasInvalidChatId = false;
+            fieldGroups.forEach(group => {
+                const idInput = group.querySelector('.chat-id-input');
+                const aliasInput = group.querySelector('.chat-alias-input');
+                const id = idInput.value.trim();
+                const alias = aliasInput.value.trim();
+
+                if (id) {
+                    if (!/^-?\d+$/.test(id)) {
+                         showNotification(_('invalidChatIdNotification', {chatId: id}), "warning");
+                         hasInvalidChatId = true;
+                         return;
+                    }
+                    chatIdsData.push({
+                        id: id,
+                        alias: alias || `${_('aliasPlaceholder')} ${id.slice(-4)}`,
+                        active: true
+                    });
+                }
+            });
+
+            if(hasInvalidChatId) return;
+
+            if (chatIdsData.length === 0) {
+                showNotification(_('atLeastOneChatIdNotification'), "error");
+                return;
+            }
+
+            const editingBotId = botIdInputHidden.value;
+            const botData = {
+                name,
+                token,
+                chat_ids: chatIdsData,
+                updatedAt: new Date().toISOString(),
+                last_update_offset: 0
+            };
+
+            try {
+                if (editingBotId) {
+                    const botIndex = bots.findIndex(b => b.id === editingBotId);
+                    if (botIndex > -1) {
+                        botData.id = editingBotId;
+                        botData.createdAt = bots[botIndex].createdAt || new Date().toISOString();
+                        botData.last_update_offset = (bots[botIndex].token === token) ? (bots[botIndex].last_update_offset || 0) : 0;
+                        bots[botIndex] = botData;
+                        showNotification(_('saveBotSuccessNotification', {botName: name}), 'success');
+                    } else {
+                         showNotification(_('genericErrorNotification'), 'error');
+                         return;
+                    }
+                } else {
+                    botData.id = generateSimpleId();
+                    botData.createdAt = new Date().toISOString();
+                    botData.last_update_offset = 0;
+                    bots.push(botData);
+                    showNotification(_('addBotSuccessNotification', {botName: name}), 'success');
+                    selectedBotId = botData.id;
+                }
+                saveBotsToLocalStorage();
+                loadBotsFromLocalStorage();
+                if(selectedBotId && !editingBotId) {
+                     selectBot(selectedBotId);
+                } else if (editingBotId) {
+                    selectBot(editingBotId);
+                }
+                closeBotForm();
+            } catch (error) {
+                console.error("Error saving bot: ", error);
+                showNotification(_('genericErrorNotification') + ": " + error.message, "error");
+            }
+        }
+
+        window.removeBot = async (botId, botName) => {
+            const confirmation = window.prompt(_('confirmDeleteBotPrompt', {botName: botName}));
+            if (confirmation !== botName) {
+                showNotification(_('deleteNotConfirmedNotification'), "info");
+                return;
+            }
+
+            bots = bots.filter(b => b.id !== botId);
+            if (allMessagesByBot[botId]) {
+                delete allMessagesByBot[botId];
+            }
+            saveBotsToLocalStorage();
+            showNotification(_('deleteBotSuccessNotification', {botName: botName}), 'success');
+
+            if (selectedBotId === botId) {
+                selectedBotId = null;
+                currentBotNameDisplay.innerHTML = `${_('defaultBotNameDisplay')} <i class="fas fa-robot text-3xl accent-theme-text ltr:ml-2 rtl:mr-2"></i>`;
+                chatIdSelectionSection.classList.add('hidden');
+                incomingMessagesSectionContainer.classList.add('hidden');
+                conversationList.innerHTML = '';
+                messagesContainer.innerHTML = `<p id="selectConversationMessage" class="text-theme-secondary text-center p-4">${_('selectConversationMessage')}</p>`;
+                chatHeader.classList.add('hidden');
+                addConversationToBotBtn.classList.add('hidden');
+                clearConversationBtn.classList.add('hidden');
+                chatInputContainer.classList.add('hidden');
+            }
+            loadBotsFromLocalStorage();
+        }
+
+        window.selectAllChatIds = (select) => {
+            if (!selectedBotId) return;
+            const bot = bots.find(b => b.id === selectedBotId);
+            if (!bot || !bot.chat_ids) return;
+
+            const searchTerm = searchChatIdInput.value.toLowerCase();
+            bot.chat_ids.forEach((chatConfig, index) => {
+                const matchesSearch = (chatConfig.alias.toLowerCase().includes(searchTerm) || chatConfig.id.includes(searchTerm));
+                if (matchesSearch) {
+                    const tagKey = `${bot.id}_${index}`;
+                    localChatIdStates[tagKey] = select;
+                }
+            });
+            renderChatIdTags(bot);
+        };
+
+        window.invertChatIdSelection = () => {
+            if (!selectedBotId) return;
+            const bot = bots.find(b => b.id === selectedBotId);
+            if (!bot || !bot.chat_ids) return;
+
+            const searchTerm = searchChatIdInput.value.toLowerCase();
+            bot.chat_ids.forEach((chatConfig, index) => {
+                const matchesSearch = (chatConfig.alias.toLowerCase().includes(searchTerm) || chatConfig.id.includes(searchTerm));
+                if (matchesSearch) {
+                    const tagKey = `${bot.id}_${index}`;
+                    localChatIdStates[tagKey] = !localChatIdStates[tagKey];
+                }
+            });
+            renderChatIdTags(bot);
+        };
+
+        function renderChatIdTags(bot) {
+            chatIdTagsContainer.innerHTML = '';
+            if (!bot || !Array.isArray(bot.chat_ids) || bot.chat_ids.length === 0) {
+                chatIdSelectionSection.classList.add('hidden');
+                return;
+            }
+            chatIdSelectionSection.classList.remove('hidden');
+
+            const searchTerm = searchChatIdInput.value.toLowerCase();
+            let activeCount = 0;
+
+            bot.chat_ids.forEach((chatConfig, index) => {
+                const matchesSearch = searchTerm === '' ||
+                                      chatConfig.alias.toLowerCase().includes(searchTerm) ||
+                                      chatConfig.id.includes(searchTerm);
+
+                if (matchesSearch) {
+                    const tagKey = `${bot.id}_${index}`;
+                    if (localChatIdStates[tagKey] === undefined) {
+                        localChatIdStates[tagKey] = chatConfig.active !== false;
+                    }
+                    const isActive = localChatIdStates[tagKey];
+
+                    const tag = document.createElement('span');
+                    tag.className = `chat-id-tag p-2 rounded-md text-sm font-medium border flex items-center ${isActive ? 'selected' : 'deselected'}`;
+
+                    const tagName = document.createElement('span');
+                    tagName.textContent = chatConfig.alias || `ID: ${chatConfig.id}`;
+                    tagName.title = `Chat ID: ${chatConfig.id}${chatConfig.alias ? ` (${chatConfig.alias})` : ''}`;
+                    tagName.onclick = () => toggleChatIdActiveState(bot.id, index);
+                    tag.appendChild(tagName);
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.innerHTML = '<i class="fas fa-times-circle fa-xs"></i>';
+                    deleteBtn.className = 'delete-chat-id-btn text-theme-secondary hover:text-red-500';
+                    deleteBtn.title = _('removeChatIdTitle');
+                    deleteBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        removeChatIdFromBot(bot.id, chatConfig.id);
+                    };
+                    tag.appendChild(deleteBtn);
+
+                    chatIdTagsContainer.appendChild(tag);
+                    if (isActive) activeCount++;
+                }
+            });
+            selectedChatIdsCount.textContent = activeCount;
+        }
+
+        function removeChatIdFromBot(botId, chatIdToRemove) {
+            const bot = bots.find(b => b.id === botId);
+            if (bot && bot.chat_ids) {
+                bot.chat_ids = bot.chat_ids.filter(cid => cid.id !== chatIdToRemove);
+                saveBotsToLocalStorage();
+                renderChatIdTags(bot);
+                if (activeConversationChatId === chatIdToRemove) {
+                    activeConversationChatId = null;
+                    messagesContainer.innerHTML = `<p id="selectConversationMessage" class="text-theme-secondary text-center p-4">${_('selectConversationMessage')}</p>`;
+                    chatHeader.classList.add('hidden');
+                    addConversationToBotBtn.classList.add('hidden');
+                    clearConversationBtn.classList.add('hidden');
+                    chatInputContainer.classList.add('hidden');
+                }
+                renderConversations(botId);
+                showNotification(_('chatIdRemovedNotification', {chatId: chatIdToRemove}) || `Chat ID ${chatIdToRemove} removed.`, 'success');
+            }
+        }
+
+        window.toggleChatIdActiveState = (botId, chatIndex) => {
+            const bot = bots.find(b => b.id === botId);
+            if (!bot || !bot.chat_ids[chatIndex]) return;
+
+            const tagKey = `${botId}_${chatIndex}`;
+            localChatIdStates[tagKey] = !localChatIdStates[tagKey];
+            renderChatIdTags(bot);
+        }
+
+        window.sendTelegram = async (messageOverride = null, chatIdOverride = null, filesOverride = null) => {
+            if (!selectedBotId) {
+                showNotification(_('noBotSelectedError'), "warning"); return;
+            }
+            const currentBot = bots.find(b => b.id === selectedBotId);
+            if (!currentBot) {
+                showNotification(_('botNotFoundForSendingError'), "error"); return;
+            }
+
+            const token = currentBot.token;
+            const messageText = messageOverride !== null ? messageOverride : document.getElementById("message").value;
+            const files = filesOverride || (chatIdOverride ? [] : document.getElementById("fileInput").files);
+
+
+            const targets = [];
+            if (chatIdOverride) {
+                const targetChat = currentBot.chat_ids.find(c => c.id === chatIdOverride);
+                let alias = `Chat ${chatIdOverride}`;
+                if (targetChat) {
+                    alias = targetChat.alias;
+                } else if (allMessagesByBot[currentBot.id] && allMessagesByBot[currentBot.id][chatIdOverride]) {
+                    const convMessages = allMessagesByBot[currentBot.id][chatIdOverride];
+                    if (convMessages.length > 0) {
+                        const lastMsg = convMessages[convMessages.length - 1];
+                        alias = lastMsg.chat.title || (lastMsg.chat.type === 'private' ? (lastMsg.from.first_name || `User ${chatIdOverride}`) + (lastMsg.from.last_name ? ` ${lastMsg.from.last_name}` : '') : `Chat ${chatIdOverride}`);
+                    }
+                }
+                targets.push({id: chatIdOverride, alias: alias });
+
+            } else {
+                 targets.push(...(currentBot.chat_ids || []).filter((chatConfig, index) => {
+                    const tagKey = `${currentBot.id}_${index}`;
+                    return localChatIdStates[tagKey] !== false;
+                }));
+            }
+
+
+            if (targets.length === 0) {
+                showNotification(_('noChatIdForBotError'), "error"); return;
+            }
+            if (!messageText && files.length === 0) {
+                showNotification(_('noMessageOrFileError'), "warning"); return;
+            }
+
+            sendButton.disabled = true;
+            sendChatInputBtn.disabled = true;
+            sendButtonText.classList.add('hidden');
+            sendButtonIcon.classList.add('hidden');
+            sendButtonIconRtl.classList.add('hidden');
+            sendSpinner.classList.remove('hidden');
+            sendStatus.textContent = _('sendingMessageStatus');
+            sendStatus.className = 'text-sm text-center text-[var(--primary-accent)]';
+
+            let successCount = 0;
+            let errorCount = 0;
+            const botTelegramId = token.split(':')[0];
+
+
+            for (const chatConfig of targets) {
+                const chatId = chatConfig.id;
+                try {
+                    let sentMessageData = null;
+                    if (files.length > 0) {
+                        for (let i = 0; i < files.length; i++) {
+                            const file = files[i];
+                            const formData = new FormData();
+                            formData.append("chat_id", chatId);
+                            if (messageText) formData.append("caption", messageText);
+                            formData.append("document", file);
+
+                            const response = await fetch(`https://api.telegram.org/bot${token}/sendDocument`, { method: "POST", body: formData });
+                            const result = await response.json();
+                            if (!result.ok) throw new Error(result.description || `Failed to send file to ${chatId}`);
+                            addLogEntry(_('fileSentLog', {fileName: file.name, recipient: chatConfig.alias || chatId, botName: currentBot.name }), 'success');
+                            if(result.result) {
+                                sentMessageData = {
+                                    id: result.result.message_id,
+                                    text: result.result.caption || `[${_('Document')}: ${file.name}]`,
+                                    date: result.result.date,
+                                    from: { id: parseInt(botTelegramId), is_bot: true, first_name: currentBot.name },
+                                    chat: { id: parseInt(chatId), type: result.result.chat.type, title: result.result.chat.title, first_name: result.result.chat.first_name, last_name: result.result.chat.last_name },
+                                    direction: 'sent',
+                                    document: result.result.document
+                                };
+                            }
+                        }
+                    } else if (messageText) {
+                        const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                            method: "POST",
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ chat_id: chatId, text: messageText, parse_mode: "HTML" })
+                        });
+                        const result = await response.json();
+                        if (!result.ok) throw new Error(result.description || `Failed to send message to ${chatId}`);
+                        addLogEntry(_('messageSentLog', {recipient: chatConfig.alias || chatId, botName: currentBot.name}), 'success');
+                        if(result.result) {
+                             sentMessageData = {
+                                id: result.result.message_id,
+                                text: result.result.text,
+                                date: result.result.date,
+                                from: { id: parseInt(botTelegramId), is_bot: true, first_name: currentBot.name },
+                                chat: { id: parseInt(chatId), type: result.result.chat.type, title: result.result.chat.title, first_name: result.result.chat.first_name, last_name: result.result.chat.last_name},
+                                direction: 'sent'
+                            };
+                        }
+                    }
+
+                    if (sentMessageData) {
+                        if (!allMessagesByBot[currentBot.id]) allMessagesByBot[currentBot.id] = {};
+                        if (!allMessagesByBot[currentBot.id][chatId]) allMessagesByBot[currentBot.id][chatId] = [];
+                        allMessagesByBot[currentBot.id][chatId].push(sentMessageData);
+                        if (activeConversationChatId == chatId) {
+                            displayMessagesForConversation(currentBot.id, chatId);
+                        }
+                        renderConversations(currentBot.id);
+                    }
+                    successCount++;
+                } catch (error) {
+                    console.error("Telegram API Error:", error);
+                    addLogEntry(_('sendFailedLog', {recipient: chatConfig.alias || chatId, botName: currentBot.name, errorMessage: error.message}), 'error');
+                    errorCount++;
+                }
+            }
+
+            sendButton.disabled = false;
+            sendChatInputBtn.disabled = false;
+            sendButtonText.classList.remove('hidden');
+            sendButtonIcon.classList.toggle('hidden', currentLanguage === 'ar');
+            sendButtonIconRtl.classList.toggle('hidden', currentLanguage === 'en');
+            sendSpinner.classList.add('hidden');
+
+            if (successCount > 0 && errorCount === 0) {
+                sendStatus.textContent = _('sentSuccessfullyStatus', {count: successCount});
+                sendStatus.className = 'text-sm text-center text-green-500';
+                if (!chatIdOverride) {
+                    document.getElementById("message").value = "";
+                    document.getElementById("fileInput").value = "";
+                } else {
+                    chatInputMessage.value = "";
+                    chatInputFilesStore = [];
+                    chatInputSelectedFiles.innerHTML = '';
+                    chatInputFile.value = '';
+                    chatInputMessage.style.height = 'auto';
+                }
+            } else if (successCount > 0 && errorCount > 0) {
+                sendStatus.textContent = _('sentWithFailuresStatus', {successCount: successCount, errorCount: errorCount});
+                sendStatus.className = 'text-sm text-center text-yellow-500';
+            } else {
+                sendStatus.textContent = _('sendFailedStatus', {errorCount: errorCount});
+                sendStatus.className = 'text-sm text-center text-red-500';
+            }
+             setTimeout(() => sendStatus.textContent = '', 7000);
+        }
+
+        window.sendFromChatInput = () => {
+            const message = chatInputMessage.value.trim();
+            if ((message || chatInputFilesStore.length > 0) && selectedBotId && activeConversationChatId) {
+                sendTelegram(message, activeConversationChatId.toString(), chatInputFilesStore);
+            } else if (!message && chatInputFilesStore.length === 0) {
+                showNotification(_('noMessageOrFileError'), 'warning');
+            }
+        };
+
+        window.handleChatInputFiles = (files) => {
+            chatInputFilesStore = Array.from(files);
+            if (chatInputFilesStore.length > 0) {
+                chatInputSelectedFiles.textContent = _('filesSelected', { count: chatInputFilesStore.length });
+            } else {
+                chatInputSelectedFiles.textContent = '';
+            }
+        };
+
+        function addLogEntry(text, type = 'info') {
+            noLogsMessage.classList.add('hidden');
+            const entry = document.createElement("div");
+            const typeClasses = {
+                error: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200',
+                success: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200',
+                info: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
+            };
+            entry.className = `p-3 rounded-md text-sm ${typeClasses[type] || typeClasses.info}`;
+
+            const iconClass = type === 'error' ? 'fas fa-exclamation-circle' : type === 'success' ? 'fas fa-check-circle' : 'fas fa-info-circle';
+            const iconColor = type === 'error' ? 'text-red-500' : type === 'success' ? 'text-green-500' : 'text-blue-500';
+
+            entry.innerHTML = `<i class="${iconClass} ${iconColor} ltr:mr-2 rtl:ml-2"></i> [${new Date().toLocaleTimeString(currentLanguage === 'ar' ? 'ar-EG' : 'en-US')}] ${text}`;
+            logEntriesContainer.prepend(entry);
+        }
+
+        let notificationTimeout;
+        function showNotification(message, type = 'info') {
+            notificationMessage.textContent = message;
+            const baseClasses = 'fixed top-5 z-[60] p-4 rounded-md shadow-lg text-white max-w-sm transition-all duration-300 ease-in-out';
+            const typeStyles = {
+                success: 'bg-green-500',
+                warning: 'bg-yellow-500 text-black',
+                error: 'bg-red-500',
+                info: 'bg-blue-500'
+            };
+            const langDirClass = currentLanguage === 'ar' ? 'right-5' : 'left-5';
+            const transformClass = currentLanguage === 'ar' ? 'translate-x-0' : 'translate-x-0';
+            notificationDiv.className = `${baseClasses} ${langDirClass} ${typeStyles[type] || typeStyles.info} ${transformClass} opacity-100`;
+            notificationDiv.classList.remove('hidden');
+
+            clearTimeout(notificationTimeout);
+            notificationTimeout = setTimeout(() => {
+                const outTransformClass = currentLanguage === 'ar' ? 'translate-x-full' : '-translate-x-full';
+                notificationDiv.classList.add('opacity-0');
+                setTimeout(() => notificationDiv.classList.add('hidden'), 300);
+            }, 4000);
+        }
+
+        window.fetchBotUpdates = async (isInitialFetch = false) => {
+            if (!selectedBotId) return;
+            const bot = bots.find(b => b.id === selectedBotId);
+            if (!bot || !bot.token) {
+                showNotification(_('botNotFoundForSendingError'), 'error');
+                return;
+            }
+
+            updatesSpinner.classList.remove('hidden');
+            selectConversationMessage.textContent = _('fetchingUpdatesMessage');
+            if(isInitialFetch) {
+                conversationList.innerHTML = '';
+            }
+            noConversationsMessage.classList.add('hidden');
+
+            let offset = !bot.last_update_offset ? 0 : bot.last_update_offset + 1;
+            if (isInitialFetch && (!allMessagesByBot[bot.id] || Object.keys(allMessagesByBot[bot.id]).length === 0)) {
+                offset = 0;
+            }
+
+            try {
+                const response = await fetch(`https://api.telegram.org/bot${bot.token}/getUpdates?offset=${offset}&timeout=10`);
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({description: "Unknown API error"}));
+                    throw new Error(`API Error ${response.status}: ${errorData.description}`);
+                }
+                const data = await response.json();
+
+                if (data.ok && data.result.length > 0) {
+                    const newOffset = data.result[data.result.length - 1].update_id;
+                     if (newOffset > (bot.last_update_offset || 0)) {
+                        bot.last_update_offset = newOffset;
+                        saveBotsToLocalStorage();
+                    }
+                    processUpdates(data.result, bot.id);
+                    if(!isInitialFetch) showNotification(_('updatesFetchedMessage'), 'success');
+                } else if (data.ok && data.result.length === 0) {
+                    if(!isInitialFetch) showNotification(_('noNewUpdatesMessage'), 'info');
+                } else {
+                    throw new Error(data.description || "Failed to fetch updates.");
+                }
+            } catch (error) {
+                console.error("Error fetching updates:", error);
+                showNotification(_('errorFetchingUpdates', {error: error.message}), 'error');
+            } finally {
+                updatesSpinner.classList.add('hidden');
+                renderConversationsFromStored(bot.id);
+                if(conversationList.children.length === 0) {
+                    noConversationsMessage.classList.remove('hidden');
+                    selectConversationMessage.textContent = _('noConversationsMessage');
+                } else if (activeConversationChatId === null && conversationList.children.length > 0) {
+                     selectConversationMessage.textContent = _('selectConversationMessage');
+                     selectConversationMessage.classList.remove('hidden');
+                } else if (activeConversationChatId !== null && messagesContainer.children.length <=1 && conversationList.children.length > 0) {
+                     selectConversationMessage.textContent = _('noMessagesInConversation');
+                     selectConversationMessage.classList.remove('hidden');
+                } else if (activeConversationChatId === null) {
+                     selectConversationMessage.textContent = _('selectConversationMessage');
+                     selectConversationMessage.classList.remove('hidden');
+                }
+            }
+        }
+
+        window.fetchChatIdsForBotForm = async () => {
+            const token = botTokenInput.value.trim();
+            if (!token) {
+                showNotification(_('tokenRequiredToFetch'), 'warning');
+                return;
+            }
+            if (!/^\d+:[A-Za-z0-9\-_]+$/.test(token)) {
+                showNotification(_('invalidBotTokenNotification'), "error");
+                return;
+            }
+
+            fetchChatIdsBtn.disabled = true;
+            fetchChatIdsSpinner.classList.remove('hidden');
+            const originalButtonText = fetchChatIdsBtn.querySelector('span').textContent;
+            fetchChatIdsBtn.querySelector('span').textContent = _('fetchingChatIds');
+
+            const existingChatIdFields = chatIdFieldsContainer.querySelectorAll('.flex.items-center');
+            const existingChatIds = new Set();
+            existingChatIdFields.forEach(group => {
+                const idInput = group.querySelector('.chat-id-input');
+                if (idInput && idInput.value.trim()) {
+                    existingChatIds.add(idInput.value.trim());
+                }
+            });
+
+            try {
+                const response = await fetch(`https://api.telegram.org/bot${token}/getUpdates?limit=50&offset=-50`);
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({description: "Unknown API error"}));
+                    throw new Error(`API Error ${response.status}: ${errorData.description}`);
+                }
+                const data = await response.json();
+
+                let newChatsAddedCount = 0;
+                if (data.ok && data.result.length > 0) {
+                    const fetchedChatObjects = {};
+
+                    data.result.forEach(update => {
+                        const msg = update.message || update.edited_message || update.channel_post || update.edited_channel_post;
+                        if (msg && msg.chat) {
+                            const chatId = msg.chat.id.toString();
+                            let chatName = msg.chat.title || msg.chat.first_name || `Chat ${chatId}`;
+                            if (msg.chat.type === 'private' && msg.chat.last_name) {
+                                chatName += ` ${msg.chat.last_name}`;
+                            }
+                            if (!existingChatIds.has(chatId) && !fetchedChatObjects[chatId]) {
+                                fetchedChatObjects[chatId] = chatName;
+                            }
+                        }
+                    });
+
+                    if (Object.keys(fetchedChatObjects).length > 0) {
+                        Object.entries(fetchedChatObjects).forEach(([id, alias]) => {
+                            addChatIdFieldToForm(id, alias);
+                            newChatsAddedCount++;
+                        });
+                        showNotification(_('chatIdsFetched', {count: newChatsAddedCount }), 'success');
+                    } else if (existingChatIdFields.length > 0 && Object.keys(fetchedChatObjects).length === 0) {
+                        showNotification(_('noNewUpdatesMessage'), 'info');
+                    } else {
+                        showNotification(_('noChatsFound'), 'info');
+                    }
+                } else {
+                    showNotification(_('noChatsFound'), 'info');
+                }
+            } catch (error) {
+                console.error("Error fetching chat IDs for form:", error);
+                showNotification(_('errorFetchingUpdates', {error: error.message}), 'error');
+            } finally {
+                fetchChatIdsBtn.disabled = false;
+                fetchChatIdsSpinner.classList.add('hidden');
+                fetchChatIdsBtn.querySelector('span').textContent = originalButtonText;
+            }
+        };
+
+        function processUpdates(updates, currentBotId) {
+            if (!allMessagesByBot[currentBotId]) {
+                allMessagesByBot[currentBotId] = {};
+            }
+            let conversationsChanged = false;
+            const bot = bots.find(b => b.id === currentBotId);
+            if (!bot) return;
+            const botTelegramIdFromToken = bot.token.split(':')[0];
+
+            updates.forEach(update => {
+                const msg = update.message || update.edited_message || update.channel_post || update.edited_channel_post;
+                if (msg) {
+                    const chatId = msg.chat.id;
+                    const messageData = {
+                        id: msg.message_id,
+                        text: msg.text || (msg.caption || ""),
+                        date: msg.date,
+                        from: { id: msg.from?.id, first_name: msg.from?.first_name, last_name: msg.from?.last_name, is_bot: msg.from?.is_bot },
+                        chat: { id: chatId, first_name: msg.chat.first_name, last_name: msg.chat.last_name, type: msg.chat.type, title: msg.chat.title},
+                        direction: msg.from?.id.toString() === botTelegramIdFromToken ? 'sent' : 'received',
+                        reply_to_message: msg.reply_to_message ? {
+                            message_id: msg.reply_to_message.message_id,
+                            text: msg.reply_to_message.text || msg.reply_to_message.caption,
+                            from: msg.reply_to_message.from ? {
+                                first_name: msg.reply_to_message.from.first_name,
+                                last_name: msg.reply_to_message.from.last_name
+                            } : { first_name: "Unknown" }
+                        } : null,
+                        photo: msg.photo, document: msg.document, sticker: msg.sticker, voice: msg.voice, video: msg.video, video_note: msg.video_note, audio: msg.audio,
+                    };
+
+                    if (!allMessagesByBot[currentBotId][chatId]) {
+                        allMessagesByBot[currentBotId][chatId] = [];
+                    }
+
+                    const existingMsgIndex = allMessagesByBot[currentBotId][chatId].findIndex(m => m.id === messageData.id);
+                    if (existingMsgIndex > -1) {
+                        allMessagesByBot[currentBotId][chatId][existingMsgIndex] = messageData;
+                    } else {
+                        allMessagesByBot[currentBotId][chatId].push(messageData);
+                    }
+                    conversationsChanged = true;
+                }
+            });
+
+            if (conversationsChanged) {
+                renderConversations(currentBotId);
+                if (activeConversationChatId && allMessagesByBot[currentBotId][activeConversationChatId]) {
+                    displayMessagesForConversation(currentBotId, activeConversationChatId);
+                }
+            }
+        }
+
+        function renderConversationsFromStored(botId) {
+            if (allMessagesByBot[botId] && Object.keys(allMessagesByBot[botId]).length > 0) {
+                renderConversations(botId);
+            } else {
+                noConversationsMessage.classList.remove('hidden');
+                conversationList.innerHTML = '';
+                 selectConversationMessage.textContent = _('noConversationsMessage');
+                 selectConversationMessage.classList.remove('hidden');
+                 chatHeader.classList.add('hidden');
+                 addConversationToBotBtn.classList.add('hidden');
+                 clearConversationBtn.classList.add('hidden');
+                 chatInputContainer.classList.add('hidden');
+                 messagesContainer.innerHTML = '';
+            }
+        }
+
+        function renderConversations(botId) {
+            conversationList.innerHTML = '';
+            const currentBotMessages = allMessagesByBot[botId];
+            if (!currentBotMessages || Object.keys(currentBotMessages).length === 0) {
+                noConversationsMessage.classList.remove('hidden');
+                return;
+            }
+            noConversationsMessage.classList.add('hidden');
+
+            const sortedChatIds = Object.keys(currentBotMessages).sort((a, b) => {
+                const messagesA = currentBotMessages[a] || [];
+                const messagesB = currentBotMessages[b] || [];
+                const lastMsgA = messagesA.length > 0 ? messagesA[messagesA.length - 1] : {date: 0};
+                const lastMsgB = messagesB.length > 0 ? messagesB[messagesB.length - 1] : {date: 0};
+                return lastMsgB.date - lastMsgA.date;
+            });
+
+            sortedChatIds.forEach(chatId => {
+                const messages = currentBotMessages[chatId];
+                if (messages.length === 0) return;
+
+                const lastMessage = messages[messages.length - 1];
+                let conversationName;
+                const currentBot = bots.find(b => b.id === botId);
+                const knownChatConfig = currentBot?.chat_ids.find(c => c.id === chatId.toString());
+
+                if (knownChatConfig && knownChatConfig.alias) {
+                    conversationName = knownChatConfig.alias;
+                } else {
+                     conversationName = lastMessage.chat.title ||
+                                   (lastMessage.chat.type === 'private' ?
+                                    ((lastMessage.chat.first_name || `User`) + (lastMessage.chat.last_name ? ` ${lastMessage.chat.last_name}` : '') || `Chat ${chatId}`) :
+                                    `Chat ${chatId}`);
+                }
+
+
+                const li = document.createElement('li');
+                li.className = `p-3 rounded-md cursor-pointer hover:bg-theme-tertiary conversation-list-item flex items-center space-x-3 rtl:space-x-reverse ${activeConversationChatId == chatId ? 'active' : ''}`;
+                li.setAttribute('data-chat-id', chatId);
+                li.setAttribute('data-chat-name', conversationName);
+                li.setAttribute('data-chat-type', lastMessage.chat.type);
+
+
+                li.onclick = () => {
+                    activeConversationChatId = chatId;
+                    displayMessagesForConversation(botId, chatId);
+                    document.querySelectorAll('.conversation-list-item').forEach(item => item.classList.remove('active'));
+                    li.classList.add('active');
+
+                    const firstMessageIsFromUser = messages[0] && messages[0].from && !messages[0].from.is_bot && messages[0].direction === 'received';
+                    addConversationToBotBtn.classList.toggle('hidden', !(lastMessage.chat.type === 'private' && firstMessageIsFromUser));
+                    clearConversationBtn.classList.remove('hidden');
+                    chatInputContainer.classList.remove('hidden');
+
+                    if(addConversationToBotBtn.classList.contains('hidden')) {
+                         addConversationToBotBtn.onclick = null;
+                    } else {
+                        addConversationToBotBtn.onclick = () => addCurrentConversationToBot();
+                    }
+                    clearConversationBtn.onclick = () => clearCurrentConversation();
+
+                    if (window.innerWidth < 768 && !isMobileChatViewActive) {
+                        toggleMobileChatView(true);
+                    }
+
+                };
+
+                const avatar = document.createElement('div');
+                avatar.className = 'avatar-placeholder flex-shrink-0';
+                const initial = conversationName ? conversationName.charAt(0).toUpperCase() : 'U';
+                avatar.textContent = initial;
+                let hash = 0;
+                for (let i = 0; i < conversationName.length; i++) {
+                    hash = conversationName.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                const color = `hsl(${hash % 360}, 50%, 60%)`;
+                avatar.style.backgroundColor = color;
+
+
+                const textContentDiv = document.createElement('div');
+                textContentDiv.className = 'flex-grow overflow-hidden';
+
+
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'font-semibold text-sm truncate';
+                nameDiv.textContent = conversationName;
+
+                const lastMsgText = document.createElement('div');
+                lastMsgText.className = 'text-xs text-theme-secondary truncate';
+                let previewText = lastMessage.text || "";
+                if(lastMessage.photo) previewText = `📷 ${_('Photo')}`;
+                else if(lastMessage.document) previewText = `📄 ${_('Document')}`;
+                else if(lastMessage.sticker) previewText = `✨ ${_('Sticker')}`;
+                else if(lastMessage.voice) previewText = `🎤 ${_('VoiceMessage')}`;
+                else if(lastMessage.audio) previewText = `🎵 ${_('AudioFile')}`;
+                else if(lastMessage.video) previewText = `📹 ${_('Video')}`;
+                else if(lastMessage.video_note) previewText = `🎬 ${_('VideoNote')}`;
+                lastMsgText.textContent = previewText;
+
+                const dateDiv = document.createElement('div');
+                dateDiv.className = 'text-xs text-theme-secondary mt-1 text-left ltr:text-right rtl:text-left flex-shrink-0';
+                dateDiv.textContent = new Date(lastMessage.date * 1000).toLocaleTimeString(currentLanguage === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+
+                textContentDiv.appendChild(nameDiv);
+                textContentDiv.appendChild(lastMsgText);
+
+                li.appendChild(avatar);
+                li.appendChild(textContentDiv);
+                li.appendChild(dateDiv);
+                conversationList.appendChild(li);
+            });
+        }
+
+        window.addCurrentConversationToBot = () => {
+            if (!selectedBotId || !activeConversationChatId) {
+                showNotification(_('genericErrorNotification'), 'error');
+                return;
+            }
+            const bot = bots.find(b => b.id === selectedBotId);
+            const activeConvElement = document.querySelector(`.conversation-list-item[data-chat-id="${activeConversationChatId}"]`);
+
+            if (!bot || !activeConvElement) {
+                showNotification(_('genericErrorNotification'), 'error');
+                return;
+            }
+
+            const senderId = activeConvElement.getAttribute('data-chat-id');
+            const senderName = activeConvElement.getAttribute('data-chat-name');
+            const chatType = activeConvElement.getAttribute('data-chat-type');
+
+            if (chatType !== 'private') {
+                showNotification(_('cannotAddGroupToBotNotification'), 'warning');
+                return;
+            }
+
+            if (!bot.chat_ids) {
+                bot.chat_ids = [];
+            }
+
+            const existingChatId = bot.chat_ids.find(cid => cid.id === senderId);
+            if (existingChatId) {
+                showNotification(_('senderAlreadyExistsNotification', { senderName: senderName, senderId: senderId, botName: bot.name }), 'info');
+            } else {
+                bot.chat_ids.push({
+                    id: senderId,
+                    alias: senderName,
+                    active: true
+                });
+                saveBotsToLocalStorage();
+                renderChatIdTags(bot);
+                showNotification(_('senderAddedToBotNotification', { senderName: senderName, senderId: senderId, botName: bot.name }), 'success');
+            }
+        };
+
+        window.clearCurrentConversation = () => {
+            if (!selectedBotId || !activeConversationChatId) {
+                showNotification(_('genericErrorNotification'), 'error');
+                return;
+            }
+            if (window.confirm(_('clearConversationConfirm'))) {
+                if (allMessagesByBot[selectedBotId] && allMessagesByBot[selectedBotId][activeConversationChatId]) {
+                    allMessagesByBot[selectedBotId][activeConversationChatId] = [];
+                    displayMessagesForConversation(selectedBotId, activeConversationChatId);
+                    renderConversations(selectedBotId);
+                    showNotification(_('conversationClearedNotification'), 'success');
+                }
+            }
+        };
+
+        window.deleteSingleMessage = (botId, chatId, messageId) => {
+            if (window.confirm(_('deleteSingleMessageConfirm'))) {
+                if (allMessagesByBot[botId] && allMessagesByBot[botId][chatId]) {
+                    allMessagesByBot[botId][chatId] = allMessagesByBot[botId][chatId].filter(msg => msg.id !== messageId);
+                    displayMessagesForConversation(botId, chatId);
+                    renderConversations(botId);
+                    showNotification(_('messageDeletedNotification'), 'success');
+                }
+            }
+        };
+
+        function displayMessagesForConversation(botId, chatId) {
+            messagesContainer.innerHTML = '';
+            selectConversationMessage.classList.add('hidden');
+            chatHeader.classList.remove('hidden');
+            chatInputContainer.classList.remove('hidden');
+
+
+            const messages = (allMessagesByBot[botId]?.[chatId] || []).slice();
+            const activeConvElement = document.querySelector(`.conversation-list-item[data-chat-id="${chatId}"]`);
+            const chatType = activeConvElement ? activeConvElement.getAttribute('data-chat-type') : 'private';
+
+
+            if (messages.length === 0) {
+                 messagesContainer.innerHTML = `<p class="text-theme-secondary text-center p-4">${_('noMessagesInConversation')}</p>`;
+                 const chatName = activeConvElement ? activeConvElement.getAttribute('data-chat-name') : `Chat ${chatId}`;
+                 chattingWithAlias.textContent = chatName;
+                 addConversationToBotBtn.classList.toggle('hidden', chatType !== 'private');
+                 clearConversationBtn.classList.remove('hidden');
+                 return;
+            }
+
+            messages.sort((a,b) => a.date - b.date);
+
+            let conversationPartnerName = messages[0].chat.title || messages[0].chat.first_name || `Chat ${chatId}`;
+             if (messages[0].chat.type === 'private' && messages[0].chat.last_name) {
+                conversationPartnerName += ` ${messages[0].chat.last_name}`;
+             }
+            chattingWithAlias.textContent = conversationPartnerName;
+            const firstMessageIsFromUser = messages[0].from && !messages[0].from.is_bot && messages[0].direction === 'received';
+            addConversationToBotBtn.classList.toggle('hidden', !(chatType === 'private' && firstMessageIsFromUser) );
+            clearConversationBtn.classList.remove('hidden');
+
+
+            messages.forEach(msg => {
+                const bubble = document.createElement('div');
+                bubble.className = 'message-bubble p-3 rounded-lg shadow mb-2';
+                bubble.setAttribute('data-message-id', msg.id);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.innerHTML = '<i class="fas fa-trash-alt fa-xs"></i>';
+                deleteBtn.className = 'delete-message-btn text-theme-secondary hover:text-red-500';
+                deleteBtn.title = _('deleteSingleMessageTitle') || 'Delete Message';
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    deleteSingleMessage(botId, chatId, msg.id);
+                };
+                if (currentLanguage === 'ar') {
+                    deleteBtn.style.left = msg.direction === 'sent' ? '2px' : 'auto';
+                    deleteBtn.style.right = msg.direction === 'received' ? '2px' : 'auto';
+                } else {
+                    deleteBtn.style.right = msg.direction === 'sent' ? '2px' : 'auto';
+                    deleteBtn.style.left = msg.direction === 'received' ? '2px' : 'auto';
+                }
+                bubble.appendChild(deleteBtn);
+
+                if (msg.reply_to_message) {
+                    const reply = msg.reply_to_message;
+                    const replyPreviewDiv = document.createElement('div');
+                    replyPreviewDiv.className = 'reply-preview';
+                    if (currentLanguage === 'ar') {
+                        replyPreviewDiv.style.borderRight = '3px solid var(--primary-accent)';
+                        replyPreviewDiv.style.borderLeft = 'none';
+                    } else {
+                        replyPreviewDiv.style.borderLeft = '3px solid var(--primary-accent)';
+                        replyPreviewDiv.style.borderRight = 'none';
+                    }
+
+                    const repliedToName = document.createElement('strong');
+                    repliedToName.textContent = reply.from?.first_name ? `${reply.from.first_name}${reply.from.last_name ? ' ' + reply.from.last_name : ''}` : 'Unknown User';
+
+                    const replyText = document.createElement('p');
+                    replyText.className = 'text-xs truncate';
+                    replyText.textContent = reply.text || `[${_('UnsupportedMessage')}]`;
+
+                    replyPreviewDiv.appendChild(repliedToName);
+                    replyPreviewDiv.appendChild(replyText);
+                    bubble.appendChild(replyPreviewDiv);
+                }
+
+                let messageContentHTML = '';
+                if (msg.text) {
+                    messageContentHTML = msg.text.replace(/\n/g, '<br>');
+                } else if (msg.photo) {
+                    messageContentHTML = `<i>[📷 ${_('Photo')}]</i>`;
+                } else if (msg.document) {
+                    messageContentHTML = `<i>[📄 ${_('Document')}: ${msg.document.file_name || ''}]</i>`;
+                } else if (msg.sticker) {
+                    messageContentHTML = `<i>[✨ ${_('Sticker')}]</i> ${msg.sticker.emoji || ''}`;
+                } else if (msg.voice) {
+                     messageContentHTML = `<i>[🎤 ${_('VoiceMessage')}]</i>`;
+                } else if (msg.audio) {
+                     messageContentHTML = `<i>[🎵 ${_('AudioFile')}: ${msg.audio.title || msg.audio.file_name || ''}]</i>`;
+                } else if (msg.video) {
+                     messageContentHTML = `<i>[📹 ${_('Video')}]</i>`;
+                } else if (msg.video_note) {
+                     messageContentHTML = `<i>[🎬 ${_('VideoNote')}]</i>`;
+                } else {
+                    messageContentHTML = `<i>[${_('UnsupportedMessage')}]</i>`;
+                }
+
+                bubble.classList.add(msg.direction === 'sent' ? 'sent' : 'received');
+
+                const contentP = document.createElement('p');
+                contentP.innerHTML = messageContentHTML;
+
+                const timeSpan = document.createElement('span');
+                timeSpan.className = 'block text-xs opacity-70 mt-1';
+                timeSpan.textContent = new Date(msg.date * 1000).toLocaleTimeString(currentLanguage === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+
+                if (bubble.classList.contains('sent')) {
+                    timeSpan.classList.add('ltr:text-right', 'rtl:text-left');
+                } else {
+                    timeSpan.classList.add('ltr:text-left', 'rtl:text-right');
+                }
+
+                bubble.appendChild(contentP);
+                bubble.appendChild(timeSpan);
+                messagesContainer.appendChild(bubble);
+            });
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function startAutoRefresh() {
+            stopAutoRefresh();
+            if (selectedBotId && autoRefreshEnabled && showIncomingMessages) {
+                autoRefreshIntervalId = setInterval(() => {
+                    fetchBotUpdates(false);
+                }, currentAutoRefreshInterval);
+                console.log("Auto-refresh started for bot:", selectedBotId, "every", currentAutoRefreshInterval / 1000, "s");
+            }
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshIntervalId) {
+                clearInterval(autoRefreshIntervalId);
+                autoRefreshIntervalId = null;
+                console.log("Auto-refresh stopped.");
+            }
+        }
+
+        function updateAutoRefreshStatusText() {
+             autoRefreshStatus.textContent = autoRefreshEnabled ? _('autoRefreshEnabledStatus', {seconds: currentAutoRefreshInterval / 1000}) : _('autoRefreshDisabledStatus');
+        }
+
+        window.toggleAutoRefresh = (enabled) => {
+            autoRefreshEnabled = enabled;
+            saveAutoRefreshPreference(enabled);
+            updateAutoRefreshStatusText();
+            if (enabled && selectedBotId && showIncomingMessages) {
+                startAutoRefresh();
+                fetchBotUpdates(false);
+            } else {
+                stopAutoRefresh();
+            }
+        };
+
+    </script>
+</body>
+</html>
